@@ -2,7 +2,7 @@
 title: "Home"
 type: note
 tags: [home]
-created: 2026-05-31
+created: "2026-05-31"
 ---
 
 # Brain
