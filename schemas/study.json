@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["title", "type", "tags", "created", "medium"],
+  "properties": {
+    "title":   { "type": "string", "minLength": 1 },
+    "type":    { "type": "string", "const": "study" },
+    "tags":    { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "created": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "medium":  { "type": "string", "enum": ["book", "course", "video"] },
+    "author":  { "type": "string" },
+    "rating":  { "type": "integer", "minimum": 1, "maximum": 5 }
+  },
+  "additionalProperties": false
+}
