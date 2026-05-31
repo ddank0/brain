@@ -1,0 +1,12 @@
+{
+  "name": "brain",
+  "private": true,
+  "workspaces": ["packages/cli"],
+  "scripts": {
+    "vault": "node packages/cli/dist/index.js",
+    "vault:dev": "ts-node packages/cli/src/index.ts",
+    "build:cli": "cd packages/cli && npm run build",
+    "build:site": "cd packages/site && npx quartz build",
+    "preview:site": "cd packages/site && npx quartz build --serve"
+  }
+}
