@@ -4,4 +4,6 @@ dist/
 *.log
 public/
 .obsidian/workspace.json
+.obsidian/cache
+.obsidian/plugins/
 .superpowers/
