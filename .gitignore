@@ -1,5 +1,6 @@
 node_modules/
 dist/
+packages/cli/dist/
 .DS_Store
 *.log
 public/
@@ -7,3 +8,12 @@ public/
 .obsidian/cache
 .obsidian/plugins/
 .superpowers/
+
+# Quartz — gerenciado separadamente, só commitar config e custom.scss
+packages/site/*
+!packages/site/quartz.config.default.yaml
+!packages/site/quartz/
+packages/site/quartz/*
+!packages/site/quartz/styles/
+packages/site/quartz/styles/*
+!packages/site/quartz/styles/custom.scss
