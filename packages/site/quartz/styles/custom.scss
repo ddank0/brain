@@ -2,75 +2,103 @@
 
 // ── Terminal Violet — custom overrides ──────────────────
 
-// Força JetBrains Mono em tudo
-* {
-  font-family: 'JetBrains Mono', monospace !important;
-  letter-spacing: -0.01em;
-}
-
-// Glow ambiente sutil no topo da página
+// Ambient violet glow at top-right
 body::before {
   content: '';
   position: fixed;
   top: 0; right: 0;
-  width: 400px; height: 300px;
-  background: radial-gradient(circle at top right, rgba(109, 40, 217, 0.08) 0%, transparent 65%);
+  width: 500px; height: 400px;
+  background: radial-gradient(circle at top right, rgba(124, 58, 237, 0.1) 0%, transparent 65%);
   pointer-events: none;
   z-index: 0;
 }
 
-// Topbar com borda violet
+// Header bottom border
 #quartz-body header {
-  border-bottom: 1px solid rgba(124, 58, 237, 0.18) !important;
-  background: #07050F !important;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.2) !important;
 }
 
-// Links internos com acento violet
+// Page title / site name
+#quartz-body header .page-title a {
+  letter-spacing: -0.03em;
+  font-weight: 600;
+}
+
+// Internal links
 article a {
-  color: #A78BFA !important;
+  color: var(--secondary) !important;
   text-decoration: none;
-  border-bottom: 1px solid rgba(167, 139, 250, 0.25);
-  transition: border-color 0.15s;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.3);
+  transition: border-color 0.15s, color 0.15s;
 }
 article a:hover {
-  border-bottom-color: #A78BFA;
-  color: #C4B5FD !important;
+  border-bottom-color: var(--secondary);
+  color: var(--tertiary) !important;
 }
 
-// Tags com estilo terminal
+// Tags
 .tag-link {
-  background: rgba(109, 40, 217, 0.1) !important;
-  border: 1px solid rgba(124, 58, 237, 0.22) !important;
-  color: #A78BFA !important;
+  background: rgba(109, 40, 217, 0.12) !important;
+  border: 1px solid rgba(124, 58, 237, 0.25) !important;
+  color: var(--secondary) !important;
   border-radius: 4px !important;
   padding: 2px 8px !important;
   font-size: 0.75rem !important;
+  transition: background 0.15s;
+}
+.tag-link:hover {
+  background: rgba(109, 40, 217, 0.22) !important;
 }
 
-// Code blocks com borda violet à esquerda
+// Code blocks — left accent bar
 pre {
-  border-left: 2px solid rgba(124, 58, 237, 0.5) !important;
-  background: rgba(109, 40, 217, 0.06) !important;
+  border-left: 2px solid rgba(124, 58, 237, 0.55) !important;
   border-radius: 0 6px 6px 0 !important;
 }
 
-code {
-  background: rgba(109, 40, 217, 0.1) !important;
-  color: #A78BFA !important;
+// Inline code
+:not(pre) > code {
+  background: rgba(109, 40, 217, 0.12) !important;
+  color: var(--secondary) !important;
   border-radius: 3px !important;
   padding: 1px 5px !important;
 }
 
-// Explorer/sidebar
-#quartz-body .sidebar {
-  background: rgba(7, 5, 15, 0.95) !important;
+// Sidebar
+.sidebar {
   border-right: 1px solid rgba(124, 58, 237, 0.12) !important;
 }
 
-// Backlinks e TOC
-.backlinks a, .toc a {
-  color: rgba(196, 181, 253, 0.6) !important;
+// Explorer folder/file links
+.explorer-content a {
+  transition: color 0.1s;
 }
-.backlinks a:hover, .toc a:hover {
-  color: #A78BFA !important;
+.explorer-content a:hover {
+  color: var(--secondary) !important;
+}
+
+// Backlinks & TOC
+.backlinks a,
+ul.overflow > li > a {
+  color: var(--darkgray) !important;
+  transition: color 0.1s;
+}
+.backlinks a:hover,
+ul.overflow > li > a:hover {
+  color: var(--secondary) !important;
+}
+
+// Graph node accent
+.graph > .graph-outer > svg circle {
+  fill: var(--tertiary);
+}
+
+// Search bar border
+#search-bar {
+  border: 1px solid rgba(124, 58, 237, 0.3) !important;
+  background: rgba(7, 5, 15, 0.8) !important;
+}
+#search-bar:focus {
+  border-color: var(--secondary) !important;
+  outline: none;
 }

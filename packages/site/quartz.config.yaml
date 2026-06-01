@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=./quartz/plugins/quartz-plugins.schema.json
 configuration:
-  pageTitle: Quartz 5
+  pageTitle: brain
   pageTitleSuffix: ""
   enableSPA: true
   enablePopovers: true
   analytics:
     provider: plausible
-  locale: en-US
+  locale: pt-BR
   baseUrl: ddank0.github.io/brain
   ignorePatterns:
     - private
@@ -16,30 +16,30 @@ configuration:
     fontOrigin: googleFonts
     cdnCaching: true
     typography:
-      header: Schibsted Grotesk
-      body: Source Sans Pro
-      code: IBM Plex Mono
+      header: JetBrains Mono
+      body: JetBrains Mono
+      code: JetBrains Mono
     colors:
       lightMode:
-        light: "#faf8f8"
-        lightgray: "#e5e5e5"
-        gray: "#b8b8b8"
-        darkgray: "#4e4e4e"
-        dark: "#2b2b2b"
-        secondary: "#284b63"
-        tertiary: "#84a59d"
-        highlight: rgba(143, 159, 169, 0.15)
-        textHighlight: "#fff23688"
+        light: "#07050F"
+        lightgray: "rgba(124,58,237,0.15)"
+        gray: "rgba(196,181,253,0.35)"
+        darkgray: "rgba(196,181,253,0.6)"
+        dark: "#EDE9FF"
+        secondary: "#A78BFA"
+        tertiary: "#7C3AED"
+        highlight: "rgba(109,40,217,0.12)"
+        textHighlight: "rgba(124,58,237,0.25)"
       darkMode:
-        light: "#161618"
-        lightgray: "#393639"
-        gray: "#646464"
-        darkgray: "#d4d4d4"
-        dark: "#ebebec"
-        secondary: "#7b97aa"
-        tertiary: "#84a59d"
-        highlight: rgba(143, 159, 169, 0.15)
-        textHighlight: "#b3aa0288"
+        light: "#07050F"
+        lightgray: "rgba(124,58,237,0.15)"
+        gray: "rgba(196,181,253,0.35)"
+        darkgray: "rgba(196,181,253,0.6)"
+        dark: "#EDE9FF"
+        secondary: "#A78BFA"
+        tertiary: "#7C3AED"
+        highlight: "rgba(109,40,217,0.12)"
+        textHighlight: "rgba(124,58,237,0.25)"
 plugins:
   - source: github:quartz-community/created-modified-date
     enabled: true
@@ -54,7 +54,7 @@ plugins:
     enabled: true
     options:
       theme:
-        light: github-light
+        light: github-dark
         dark: github-dark
       keepBackground: false
     order: 20
