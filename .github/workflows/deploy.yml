@@ -7,6 +7,7 @@ on:
       - "content/**"
       - "packages/site/**"
       - "schemas/**"
+      - ".github/workflows/**"
 
 permissions:
   contents: read
@@ -48,16 +49,27 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Clone Quartz v5
+        run: git clone https://github.com/jackyzha0/quartz.git packages/site-build
+
       - name: Install Quartz deps
-        run: cd packages/site && npm ci
+        run: cd packages/site-build && npm install
+
+      - name: Apply custom config and styles
+        run: |
+          cp packages/site/quartz.config.yaml packages/site-build/quartz.config.yaml
+          cp packages/site/quartz/styles/custom.scss packages/site-build/quartz/styles/custom.scss
+
+      - name: Link content
+        run: ln -sf ${{ github.workspace }}/content packages/site-build/content
 
       - name: Build Quartz site
-        run: cd packages/site && npx quartz build
+        run: cd packages/site-build && npx quartz build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: packages/site/public
+          path: packages/site-build/public
 
   deploy:
     needs: build
