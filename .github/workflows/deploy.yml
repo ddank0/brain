@@ -55,13 +55,20 @@ jobs:
       - name: Install Quartz deps
         run: cd packages/site-build && npm install
 
+      - name: Initialize Quartz (sets up .quartz/plugins)
+        run: |
+          cd packages/site-build
+          npx quartz create \
+            --template obsidian \
+            --source ${{ github.workspace }}/content \
+            --strategy copy \
+            --links shortest \
+            --baseUrl ddank0.github.io/brain
+
       - name: Apply custom config and styles
         run: |
           cp packages/site/quartz.config.yaml packages/site-build/quartz.config.yaml
           cp packages/site/quartz/styles/custom.scss packages/site-build/quartz/styles/custom.scss
-
-      - name: Link content
-        run: ln -sf ${{ github.workspace }}/content packages/site-build/content
 
       - name: Build Quartz site
         run: cd packages/site-build && npx quartz build
