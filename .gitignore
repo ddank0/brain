@@ -9,9 +9,11 @@ public/
 .obsidian/plugins/
 .superpowers/
 
-# Quartz — gerenciado separadamente, só commitar config e custom.scss
+# Quartz — só commitar configs e custom.scss
 packages/site/*
+!packages/site/quartz.config.yaml
 !packages/site/quartz.config.default.yaml
+!packages/site/quartz.lock.json
 !packages/site/quartz/
 packages/site/quartz/*
 !packages/site/quartz/styles/
