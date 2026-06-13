@@ -6,7 +6,7 @@ test.describe('Homepage', () => {
   });
 
   test('renders topbar with logo, tabs and search button', async ({ page }) => {
-    await expect(page.locator('.logo')).toContainText('vault');
+    await expect(page.locator('.logo')).toContainText('brain');
     await expect(page.locator('[data-tab="all"]')).toBeVisible();
     await expect(page.locator('[data-tab="dev"]')).toBeVisible();
     await expect(page.locator('[data-tab="study"]')).toBeVisible();
@@ -142,9 +142,10 @@ test.describe('Note page', () => {
     await expect(page.locator('.note-content')).toBeVisible();
   });
 
-  test('breadcrumb shows domain and note name', async ({ page }) => {
+  test('breadcrumb shows back link and note path', async ({ page }) => {
     await page.goto('/brain/10_dev/git-workflows');
-    await expect(page.locator('.breadcrumb')).toContainText('10_dev');
+    await expect(page.locator('.breadcrumb-back')).toContainText('← brain');
+    await expect(page.locator('.breadcrumb')).toContainText('dev');
     await expect(page.locator('.breadcrumb')).toContainText('git-workflows');
   });
 

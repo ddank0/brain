@@ -8,8 +8,9 @@
     "vault": "node packages/cli/dist/index.js",
     "vault:dev": "ts-node packages/cli/src/index.ts",
     "build:cli": "cd packages/cli && npm run build",
-    "build:site": "cd packages/site && npx quartz build",
-    "preview:site": "cd packages/site && npx quartz build --serve"
+    "dev:site": "cd packages/site && npm run dev",
+    "build:site": "cd packages/site && npm run build",
+    "preview:site": "cd packages/site && npm run preview"
   },
   "devDependencies": {
     "lefthook": "^2.1.9"
