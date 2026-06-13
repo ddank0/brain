@@ -1,0 +1,123 @@
+---
+---
+<dialog id="cmd-palette" class="cmd-palette" aria-label="Busca e comandos">
+  <form method="dialog" class="cmd-form">
+    <div class="cmd-input-row">
+      <span class="cmd-icon" aria-hidden="true">⌕</span>
+      <input
+        type="text"
+        id="cmd-input"
+        class="cmd-input"
+        placeholder="buscar notas..."
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="Buscar"
+      />
+      <button type="submit" class="cmd-esc">esc</button>
+    </div>
+    <div id="cmd-results" class="cmd-results" role="listbox" aria-label="Resultados"></div>
+    <div class="cmd-footer">
+      <span><kbd>↑↓</kbd> navegar</span>
+      <span><kbd>↵</kbd> abrir</span>
+      <span><kbd>esc</kbd> fechar</span>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  const dialog = document.getElementById('cmd-palette') as HTMLDialogElement;
+  const input = document.getElementById('cmd-input') as HTMLInputElement;
+  const results = document.getElementById('cmd-results') as HTMLDivElement;
+  const openBtn = document.getElementById('cmd-open');
+
+  let selectedIdx = -1;
+  let pagefind: any = null;
+  let debounceTimer: ReturnType<typeof setTimeout>;
+
+  async function loadPagefind() {
+    if (!pagefind) {
+      // @ts-ignore — pagefind is generated at build time
+      pagefind = await import('/brain/pagefind/pagefind.js');
+      await pagefind.init();
+    }
+    return pagefind;
+  }
+
+  function getResultEls() {
+    return Array.from(results.querySelectorAll<HTMLAnchorElement>('.cmd-result'));
+  }
+
+  function updateSelection(newIdx: number) {
+    const items = getResultEls();
+    items.forEach(el => el.classList.remove('selected'));
+    selectedIdx = Math.max(-1, Math.min(items.length - 1, newIdx));
+    if (selectedIdx >= 0) items[selectedIdx]?.classList.add('selected');
+  }
+
+  function renderResults(items: any[]) {
+    selectedIdx = -1;
+    results.innerHTML = '';
+    if (!items.length) {
+      results.innerHTML = '<div class="cmd-empty">Nenhum resultado</div>';
+      return;
+    }
+    items.slice(0, 8).forEach((item, i) => {
+      const el = document.createElement('a');
+      el.href = item.url;
+      el.className = 'cmd-result';
+      el.setAttribute('role', 'option');
+      const type = item.meta?.type ?? 'note';
+      const title = item.meta?.title ?? item.url.split('/').pop();
+      const pathPart = item.url.split('/').slice(-2, -1)[0] ?? '';
+      el.innerHTML = `
+        <span class="cmd-result-type type-${type}">${type}</span>
+        <span class="cmd-result-title">${title}</span>
+        <span class="cmd-result-path">${pathPart}/</span>
+      `;
+      results.appendChild(el);
+    });
+  }
+
+  async function doSearch(query: string) {
+    if (!query.trim()) { results.innerHTML = ''; return; }
+    const pf = await loadPagefind();
+    const searchResult = await pf.search(query);
+    const items = await Promise.all(
+      searchResult.results.slice(0, 8).map((r: any) => r.data())
+    );
+    renderResults(items);
+  }
+
+  function openPalette() {
+    dialog.showModal();
+    input.value = '';
+    results.innerHTML = '';
+    input.focus();
+  }
+
+  openBtn?.addEventListener('click', openPalette);
+
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      openPalette();
+      return;
+    }
+    if (!dialog.open) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); updateSelection(selectedIdx + 1); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); updateSelection(selectedIdx - 1); }
+    if (e.key === 'Enter' && selectedIdx >= 0) {
+      const selected = getResultEls()[selectedIdx];
+      if (selected) window.location.href = selected.href;
+    }
+  });
+
+  input?.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => doSearch(input.value), 150);
+  });
+
+  dialog?.addEventListener('click', (e: MouseEvent) => {
+    if (e.target === dialog) dialog.close();
+  });
+</script>
