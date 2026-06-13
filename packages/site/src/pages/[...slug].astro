@@ -1,0 +1,41 @@
+---
+import NoteLayout from '../layouts/NoteLayout.astro';
+import CommandPalette from '../components/CommandPalette.astro';
+import { getCollection, render } from 'astro:content';
+import { buildBacklinksMap } from '../lib/backlinks';
+
+export async function getStaticPaths() {
+  const notes = await getCollection('vault', ({ id }) => id !== 'index');
+  const noteMetas = notes.map(n => ({
+    id: n.id,
+    title: n.data.title,
+    type: n.data.type,
+    tags: n.data.tags,
+    body: n.body ?? '',
+  }));
+  const backlinksMap = buildBacklinksMap(noteMetas);
+
+  return notes.map(note => ({
+    params: { slug: note.id },
+    props: {
+      note,
+      backlinks: backlinksMap[note.id] ?? [],
+    },
+  }));
+}
+
+const { note, backlinks } = Astro.props;
+const { Content } = await render(note);
+---
+<NoteLayout
+  title={note.data.title}
+  type={note.data.type}
+  tags={note.data.tags}
+  created={note.data.created}
+  status={note.data.status}
+  slug={note.id}
+  backlinks={backlinks}
+>
+  <Content />
+</NoteLayout>
+<CommandPalette />
