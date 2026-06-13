@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import StatsStrip from '../components/StatsStrip.astro';
+import NoteList from '../components/NoteList.astro';
+import CommandPalette from '../components/CommandPalette.astro';
+import { getCollection } from 'astro:content';
+import { getStats } from '../lib/stats';
+
+const allNotes = await getCollection('vault', ({ id }) => id !== 'index');
+const noteMetas = allNotes.map(note => ({
+  id: note.id,
+  title: note.data.title,
+  type: note.data.type,
+  tags: note.data.tags,
+  body: note.body ?? '',
+}));
+const stats = getStats(noteMetas);
+---
+<BaseLayout title="vault_">
+  <Header />
+  <StatsStrip
+    total={stats.total}
+    projects={stats.byType['project'] ?? 0}
+    studies={stats.byType['study'] ?? 0}
+    links={stats.internalLinks}
+  />
+  <NoteList notes={allNotes} />
+  <CommandPalette />
+</BaseLayout>
+
+<script>
+  // Tab filter — runs after DOM is ready
+  document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const type = tab.dataset.tab!;
+      document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach(t =>
+        t.classList.toggle('active', t.dataset.tab === type)
+      );
+      document.querySelectorAll<HTMLElement>('[data-note-type]').forEach(row => {
+        row.hidden = type !== 'all' && row.dataset.noteType !== type;
+      });
+    });
+  });
+  // Set 'all' as default active
+  document.querySelector<HTMLButtonElement>('[data-tab="all"]')?.classList.add('active');
+</script>

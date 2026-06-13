@@ -14,6 +14,13 @@ const slugMap = buildSlugMap(vaultPath);
 export default defineConfig({
   base: '/brain',
   output: 'static',
+  vite: {
+    build: {
+      rollupOptions: {
+        external: ['/brain/pagefind/pagefind.js'],
+      },
+    },
+  },
   markdown: {
     processor: unified({
       remarkPlugins: [
