@@ -25,6 +25,7 @@ export default defineConfig({
           hrefTemplate: (permalink) => `/brain/${permalink}`,
           wikiLinkClassName: 'wikilink',
           newClassName: 'wikilink-broken',
+          permalinks: Object.values(slugMap),
         }],
       ],
       rehypePlugins: [
