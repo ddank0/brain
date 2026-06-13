@@ -47,36 +47,20 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "22.12"
 
-      - name: Clone Quartz v5
-        run: git clone https://github.com/jackyzha0/quartz.git packages/site-build
+      - name: Install site deps
+        run: cd packages/site && npm ci
 
-      - name: Install Quartz deps
-        run: cd packages/site-build && npm install
-
-      - name: Initialize Quartz (sets up .quartz/plugins)
-        run: |
-          cd packages/site-build
-          npx quartz create \
-            --template obsidian \
-            --source ${{ github.workspace }}/content \
-            --strategy copy \
-            --links shortest \
-            --baseUrl ddank0.github.io/brain
-
-      - name: Apply custom config and styles
-        run: |
-          cp packages/site/quartz.config.yaml packages/site-build/quartz.config.yaml
-          cp packages/site/quartz/styles/custom.scss packages/site-build/quartz/styles/custom.scss
-
-      - name: Build Quartz site
-        run: cd packages/site-build && npx quartz build
+      - name: Build site + Pagefind index
+        run: cd packages/site && npm run build
+        env:
+          VAULT_PATH: ${{ github.workspace }}/content
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: packages/site-build/public
+          path: packages/site/dist
 
   deploy:
     needs: build
