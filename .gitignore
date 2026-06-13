@@ -9,13 +9,8 @@ public/
 .obsidian/plugins/
 .superpowers/
 
-# Quartz — só commitar configs e custom.scss
-packages/site/*
-!packages/site/quartz.config.yaml
-!packages/site/quartz.config.default.yaml
-!packages/site/quartz.lock.json
-!packages/site/quartz/
-packages/site/quartz/*
-!packages/site/quartz/styles/
-packages/site/quartz/styles/*
-!packages/site/quartz/styles/custom.scss
+# Astro site — ignore generated/installed dirs, commit scaffold
+packages/site/node_modules/
+packages/site/dist/
+packages/site/.astro/
+!packages/site/public/
