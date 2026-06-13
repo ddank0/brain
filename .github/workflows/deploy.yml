@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - "content/**"
-      - "packages/site/**"
+      - "packages/**"
       - "schemas/**"
       - ".github/workflows/**"
 
@@ -36,6 +36,9 @@ jobs:
       - name: Build CLI
         run: cd packages/cli && npm run build
 
+      - name: Test CLI (unit)
+        run: cd packages/cli && npm test
+
       - name: Validate vault
         run: node packages/cli/dist/index.js validate --strict
 
@@ -48,13 +51,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22.12"
+          cache: "npm"
+          cache-dependency-path: packages/site/package-lock.json
 
       - name: Install site deps
         run: cd packages/site && npm ci
 
+      - name: Test site (unit)
+        run: cd packages/site && npm test
+
       - name: Build site + Pagefind index
         run: cd packages/site && npm run build
         env:
+          VAULT_PATH: ${{ github.workspace }}/content
+
+      - name: Install Playwright browsers
+        run: cd packages/site && npx playwright install --with-deps chromium
+
+      - name: Test site (E2E)
+        run: cd packages/site && npm run test:e2e
+        env:
+          CI: true
           VAULT_PATH: ${{ github.workspace }}/content
 
       - name: Upload Pages artifact
