@@ -1,0 +1,21 @@
+---
+import '../styles/terminal-violet.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description = 'Second brain pessoal — Dev, Projetos e Estudos.' } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title} · brain</title>
+  {description && <meta name="description" content={description} />}
+</head>
+<body>
+  <slot />
+</body>
+</html>

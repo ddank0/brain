@@ -1,0 +1,52 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Backlinks from '../components/Backlinks.astro';
+
+interface BacklinkRef {
+  slug: string;
+  title: string;
+}
+
+interface Props {
+  title: string;
+  type: string;
+  tags: string[];
+  created: string;
+  status?: string;
+  slug: string;
+  backlinks: BacklinkRef[];
+}
+
+const { title, type, tags, created, status, slug, backlinks } = Astro.props;
+
+const parts = slug.split('/');
+const domain = parts.length > 1 ? parts[0] : null;
+const noteName = parts[parts.length - 1];
+---
+<BaseLayout title={title}>
+  <Header />
+  <main class="note-main">
+    {domain && (
+      <div class="breadcrumb">
+        <span>{domain}</span>
+        <span class="breadcrumb-sep">/</span>
+        <span>{noteName}</span>
+      </div>
+    )}
+    <h1 class="note-title">{title}</h1>
+    <div class="tags-row">
+      {tags.map(tag => (
+        <a href={`/brain/tags/${tag}`} class={`tag type-${type}`}>{tag}</a>
+      ))}
+    </div>
+    <div class="note-meta">
+      <span><span class="meta-label">created</span>{created}</span>
+      {status && <span><span class="meta-label">status</span>{status}</span>}
+    </div>
+    <div class="note-content">
+      <slot />
+    </div>
+    <Backlinks items={backlinks} />
+  </main>
+</BaseLayout>
