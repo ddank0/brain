@@ -190,6 +190,7 @@ a:hover { color: var(--tv-light); text-decoration: underline; }
 .type-study   { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.25); color: #93C5FD; }
 .type-project { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.25); color: #6EE7B7; }
 .type-idea    { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.25); color: #FCD34D; }
+.type-docs    { background: rgba(6,182,212,0.12);  border-color: rgba(6,182,212,0.25);  color: #67E8F9; }
 
 .note-title-text {
   font-size: 13px;

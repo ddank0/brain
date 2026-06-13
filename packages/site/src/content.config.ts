@@ -13,7 +13,7 @@ const vault = defineCollection({
   }),
   schema: z.object({
     title: z.string(),
-    type: z.enum(['note', 'study', 'project', 'idea']),
+    type: z.enum(['note', 'study', 'project', 'idea', 'docs']),
     tags: z.array(z.string()),
     created: z.string(),
     updated: z.string().optional(),
