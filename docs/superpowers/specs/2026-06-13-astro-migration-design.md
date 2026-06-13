@@ -14,7 +14,7 @@ Astro como static site generator lendo diretamente de `content/` via Content Col
 
 ## Tech Stack
 
-- **Astro 4** — SSG, Content Collections, roteamento baseado em arquivo
+- **Astro 6** (6.4.6, node >=22.12.0) — SSG, Content Layer API com `glob()` loader, roteamento baseado em arquivo
 - **remark-wiki-link** — resolução de `[[wikilinks]]` em links HTML
 - **remark-gfm** — tabelas, task lists, strikethrough
 - **rehype-slug + rehype-autolink-headings** — âncoras nos headings
@@ -68,6 +68,33 @@ brain/
 ```
 
 `packages/site-build` (clone do Quartz no CI) é removido — não existe mais localmente nem na pipeline.
+
+---
+
+## Content Layer
+
+O vault fica fora do `src/` — em `content/` na raiz do monorepo. Astro 6 resolve isso com o `glob()` loader em `src/content/config.ts`:
+
+```ts
+import { defineCollection, z } from 'astro:content';
+import { glob } from 'astro/loaders';
+
+const vault = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: process.env.VAULT_PATH ?? '../../content' }),
+  schema: z.object({
+    title: z.string(),
+    type: z.enum(['note', 'study', 'project', 'idea']),
+    tags: z.array(z.string()),
+    created: z.string(),
+    updated: z.string().optional(),
+    status: z.enum(['draft', 'ready']).optional(),
+  }),
+});
+
+export const collections = { vault };
+```
+
+`VAULT_PATH` é a variável de ambiente — `../../content` em dev, `${{ github.workspace }}/content` no CI. O `getCollection('vault')` fica disponível em qualquer página Astro sem imports adicionais.
 
 ---
 
@@ -252,7 +279,7 @@ validate:
   - node packages/cli/dist/index.js validate --strict
 
 build:
-  node-version: "22"
+  node-version: "22.12"
   - npm ci (packages/site)
   - npm run build (packages/site)         # astro build
   - npx pagefind --site packages/site/dist
