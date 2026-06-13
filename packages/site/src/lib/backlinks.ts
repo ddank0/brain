@@ -11,7 +11,10 @@ export function buildBacklinksMap(notes: NoteMeta[]): Record<string, BacklinkRef
   for (const note of notes) {
     slugByKey[note.title.toLowerCase()] = note.id;
     const filename = note.id.split('/').pop() ?? '';
-    slugByKey[filename.toLowerCase()] = note.id;
+    const filenameKey = filename.toLowerCase();
+    if (!slugByKey[filenameKey]) {
+      slugByKey[filenameKey] = note.id;
+    }
   }
 
   const backlinks: Record<string, BacklinkRef[]> = {};

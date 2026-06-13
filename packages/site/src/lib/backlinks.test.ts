@@ -32,4 +32,15 @@ describe('buildBacklinksMap', () => {
     const gitRef = dockerBacklinks.find(b => b.slug === '10_Dev/git');
     expect(gitRef?.title).toBe('Git Workflows');
   });
+
+  it('não colide quando dois arquivos têm o mesmo filename em pastas diferentes', () => {
+    const conflictNotes = [
+      { id: '10_Dev/docker', title: 'Docker Dev', type: 'note', tags: [], body: '' },
+      { id: '20_Projects/docker', title: 'Docker Project', type: 'project', tags: [], body: '[[Docker Dev]]' },
+    ];
+    const map = buildBacklinksMap(conflictNotes);
+    // 20_Projects/docker links to 10_Dev/docker by title — should resolve correctly
+    expect(map['10_Dev/docker']).toHaveLength(1);
+    expect(map['10_Dev/docker'][0].slug).toBe('20_Projects/docker');
+  });
 });
