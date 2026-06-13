@@ -1,104 +1,410 @@
 @use "./variables.scss" as *;
 
-// ── Terminal Violet — custom overrides ──────────────────
+// ── Terminal Violet — design tokens ─────────────────────
+:root {
+  --tv-bg:          #07050F;
+  --tv-elevated:    rgba(124, 58, 237, 0.06);
+  --tv-card:        rgba(124, 58, 237, 0.04);
+  --tv-accent:      #7C3AED;
+  --tv-mid:         #A78BFA;
+  --tv-light:       #C4B5FD;
+  --tv-fg:          #EDE9FF;
+  --tv-muted:       rgba(196, 181, 253, 0.5);
+  --tv-border:      rgba(124, 58, 237, 0.18);
+  --tv-border-md:   rgba(124, 58, 237, 0.28);
+  --tv-border-lg:   rgba(124, 58, 237, 0.45);
+  --tv-glow:        rgba(124, 58, 237, 0.10);
+}
 
-// Ambient violet glow at top-right
+// ── Base ─────────────────────────────────────────────────
+html, body {
+  background: var(--tv-bg) !important;
+}
+
+// Ambient violet glow — top right
 body::before {
   content: '';
   position: fixed;
   top: 0; right: 0;
-  width: 500px; height: 400px;
-  background: radial-gradient(circle at top right, rgba(124, 58, 237, 0.1) 0%, transparent 65%);
+  width: 600px; height: 500px;
+  background: radial-gradient(ellipse at 85% 0%, rgba(124, 58, 237, 0.09) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
 
-// Header bottom border
-#quartz-body header {
-  border-bottom: 1px solid rgba(124, 58, 237, 0.2) !important;
+// Thin custom scrollbar
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--tv-border-md);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--tv-accent); }
+
+// ── Header ───────────────────────────────────────────────
+#quartz-header,
+header.short-header {
+  border-bottom: 1px solid var(--tv-border) !important;
+  background: var(--tv-bg) !important;
 }
 
-// Page title / site name
-#quartz-body header .page-title a {
-  letter-spacing: -0.03em;
-  font-weight: 600;
+// Site title — "vault_" look
+.page-title {
+  font-weight: 700 !important;
+  letter-spacing: -0.04em !important;
+}
+.page-title a {
+  color: var(--tv-fg) !important;
+  text-decoration: none !important;
+  border: none !important;
+}
+.page-title a::after {
+  content: '_';
+  color: var(--tv-accent);
+  animation: blink 1.1s step-end infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+// ── Sidebars ─────────────────────────────────────────────
+.sidebar.left {
+  background: var(--tv-bg) !important;
+  border-right: 1px solid var(--tv-border) !important;
+}
+.sidebar.right {
+  background: var(--tv-bg) !important;
+  border-left: 1px solid var(--tv-border) !important;
+}
+
+// ── Explorer ─────────────────────────────────────────────
+.explorer {
+  font-size: 0.78rem !important;
+}
+.explorer-content li > a,
+.explorer-content li > .folder-entry {
+  color: var(--tv-muted) !important;
+  transition: color 0.1s !important;
+  padding: 2px 0 !important;
+}
+.explorer-content li > a:hover,
+.explorer-content li > a.active {
+  color: var(--tv-mid) !important;
+}
+.explorer-content .folder-title {
+  font-size: 0.68rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  color: var(--tv-muted) !important;
+  font-weight: 600 !important;
+}
+.folder-icon {
+  color: var(--tv-accent) !important;
+  opacity: 0.7;
+}
+
+// ── Article typography ───────────────────────────────────
+article {
+  font-size: 0.92rem !important;
+  line-height: 1.7 !important;
+}
+
+article h1 {
+  font-size: 1.75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.035em !important;
+  color: var(--tv-fg) !important;
+  line-height: 1.2 !important;
+  margin-bottom: 0.75rem !important;
+}
+article h2 {
+  font-size: 1.05rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--tv-fg) !important;
+  border-bottom: 1px solid var(--tv-border) !important;
+  padding-bottom: 0.3rem !important;
+  margin-top: 2.5rem !important;
+}
+article h3 {
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  color: var(--tv-light) !important;
+  margin-top: 1.5rem !important;
+}
+article h4, article h5, article h6 {
+  font-size: 0.72rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  color: var(--tv-muted) !important;
+  font-weight: 600 !important;
+}
+article p {
+  color: var(--tv-fg) !important;
 }
 
 // Internal links
 article a {
-  color: var(--secondary) !important;
-  text-decoration: none;
-  border-bottom: 1px solid rgba(167, 139, 250, 0.3);
-  transition: border-color 0.15s, color 0.15s;
+  color: var(--tv-mid) !important;
+  text-decoration: none !important;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.28) !important;
+  transition: color 0.12s, border-color 0.12s !important;
 }
 article a:hover {
-  border-bottom-color: var(--secondary);
-  color: var(--tertiary) !important;
+  color: var(--tv-light) !important;
+  border-bottom-color: var(--tv-mid) !important;
 }
 
-// Tags
+// ── Breadcrumbs ──────────────────────────────────────────
+.breadcrumb-container {
+  font-size: 0.7rem !important;
+  color: var(--tv-muted) !important;
+  letter-spacing: 0.02em !important;
+  margin-bottom: 0.5rem !important;
+}
+.breadcrumb-element a {
+  color: var(--tv-mid) !important;
+  text-decoration: none !important;
+  border: none !important;
+}
+.breadcrumb-element a:hover {
+  color: var(--tv-light) !important;
+  border: none !important;
+}
+.breadcrumb-separator {
+  color: var(--tv-muted) !important;
+}
+
+// ── Content meta (dates, reading time) ──────────────────
+.content-meta {
+  font-size: 0.68rem !important;
+  color: var(--tv-muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  border-top: 1px solid var(--tv-border) !important;
+  padding-top: 0.4rem !important;
+  margin-bottom: 1.8rem !important;
+}
+.content-meta span {
+  color: var(--tv-muted) !important;
+}
+
+// ── Tags ─────────────────────────────────────────────────
 .tag-link {
-  background: rgba(109, 40, 217, 0.12) !important;
-  border: 1px solid rgba(124, 58, 237, 0.25) !important;
-  color: var(--secondary) !important;
-  border-radius: 4px !important;
-  padding: 2px 8px !important;
-  font-size: 0.75rem !important;
-  transition: background 0.15s;
+  background: rgba(109, 40, 217, 0.09) !important;
+  border: 1px solid var(--tv-border) !important;
+  color: var(--tv-mid) !important;
+  border-radius: 3px !important;
+  padding: 1px 7px !important;
+  font-size: 0.68rem !important;
+  font-weight: 500 !important;
+  text-transform: lowercase !important;
+  letter-spacing: 0.02em !important;
+  transition: background 0.1s, border-color 0.1s !important;
+  text-decoration: none !important;
 }
 .tag-link:hover {
-  background: rgba(109, 40, 217, 0.22) !important;
+  background: rgba(124, 58, 237, 0.18) !important;
+  border-color: var(--tv-accent) !important;
+  color: var(--tv-light) !important;
 }
 
-// Code blocks — left accent bar
+// ── Code ─────────────────────────────────────────────────
 pre {
-  border-left: 2px solid rgba(124, 58, 237, 0.55) !important;
+  background: rgba(109, 40, 217, 0.05) !important;
+  border: 1px solid var(--tv-border) !important;
+  border-left: 2px solid var(--tv-accent) !important;
   border-radius: 0 6px 6px 0 !important;
+  font-size: 0.8rem !important;
+  line-height: 1.6 !important;
 }
-
-// Inline code
 :not(pre) > code {
   background: rgba(109, 40, 217, 0.12) !important;
-  color: var(--secondary) !important;
+  color: var(--tv-light) !important;
   border-radius: 3px !important;
-  padding: 1px 5px !important;
+  padding: 1px 6px !important;
+  font-size: 0.85em !important;
 }
 
-// Sidebar
-.sidebar {
-  border-right: 1px solid rgba(124, 58, 237, 0.12) !important;
+// ── Blockquote ───────────────────────────────────────────
+blockquote {
+  border-left: 2px solid var(--tv-border-md) !important;
+  background: var(--tv-elevated) !important;
+  color: var(--tv-muted) !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0 4px 4px 0 !important;
 }
 
-// Explorer folder/file links
-.explorer-content a {
-  transition: color 0.1s;
+// ── TOC ──────────────────────────────────────────────────
+.toc > #toc-header {
+  font-size: 0.68rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  color: var(--tv-muted) !important;
+  font-weight: 600 !important;
 }
-.explorer-content a:hover {
-  color: var(--secondary) !important;
+.toc li > a {
+  font-size: 0.78rem !important;
+  color: var(--tv-muted) !important;
+  border: none !important;
+  transition: color 0.1s !important;
+  text-decoration: none !important;
+}
+.toc li > a:hover,
+.toc li > a.in-view {
+  color: var(--tv-mid) !important;
+  border: none !important;
+}
+.toc li.in-view > a {
+  color: var(--tv-mid) !important;
 }
 
-// Backlinks & TOC
-.backlinks a,
-ul.overflow > li > a {
-  color: var(--darkgray) !important;
-  transition: color 0.1s;
+// ── Backlinks ────────────────────────────────────────────
+.backlinks > #backlinks-header {
+  font-size: 0.68rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  color: var(--tv-muted) !important;
+  font-weight: 600 !important;
+  border: none !important;
 }
-.backlinks a:hover,
-ul.overflow > li > a:hover {
-  color: var(--secondary) !important;
+.backlinks ul {
+  list-style: none !important;
+  padding-left: 0 !important;
+}
+.backlinks ul li::before {
+  content: '→ ';
+  color: var(--tv-muted);
+  font-size: 0.75rem;
+}
+.backlinks ul li a {
+  font-size: 0.78rem !important;
+  color: var(--tv-muted) !important;
+  border: none !important;
+  text-decoration: none !important;
+  transition: color 0.1s !important;
+}
+.backlinks ul li a:hover {
+  color: var(--tv-mid) !important;
 }
 
-// Graph node accent
-.graph > .graph-outer > svg circle {
-  fill: var(--tertiary);
+// ── Search ───────────────────────────────────────────────
+#search-container {
+  background: rgba(7, 5, 15, 0.97) !important;
+  border: 1px solid var(--tv-border-lg) !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--tv-border) !important;
+  border-radius: 8px !important;
 }
-
-// Search bar border
 #search-bar {
-  border: 1px solid rgba(124, 58, 237, 0.3) !important;
-  background: rgba(7, 5, 15, 0.8) !important;
+  background: rgba(124, 58, 237, 0.05) !important;
+  border: 1px solid var(--tv-border) !important;
+  color: var(--tv-fg) !important;
+  caret-color: var(--tv-mid) !important;
+  font-size: 0.9rem !important;
 }
 #search-bar:focus {
-  border-color: var(--secondary) !important;
-  outline: none;
+  border-color: var(--tv-accent) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15) !important;
+}
+#search-bar::placeholder {
+  color: var(--tv-muted) !important;
+}
+.search-result-card {
+  border-bottom: 1px solid var(--tv-border) !important;
+  transition: background 0.1s !important;
+}
+.search-result-card:hover,
+.search-result-card:focus {
+  background: rgba(124, 58, 237, 0.07) !important;
+}
+.search-result-card > p.title {
+  font-size: 0.85rem !important;
+  color: var(--tv-fg) !important;
+}
+.search-result-card > p.section {
+  font-size: 0.75rem !important;
+  color: var(--tv-muted) !important;
+}
+mark {
+  background: rgba(124, 58, 237, 0.25) !important;
+  color: var(--tv-light) !important;
+  border-radius: 2px !important;
+  padding: 0 2px !important;
+}
+
+// ── Graph ────────────────────────────────────────────────
+.graph > #graph-container {
+  background: rgba(7, 5, 15, 0.85) !important;
+  border: 1px solid var(--tv-border) !important;
+  border-radius: 6px !important;
+}
+
+// ── Tables ───────────────────────────────────────────────
+article table {
+  font-size: 0.82rem !important;
+  border-collapse: collapse !important;
+  width: 100% !important;
+}
+article th {
+  font-size: 0.68rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: var(--tv-muted) !important;
+  border-bottom: 1px solid var(--tv-border-md) !important;
+  padding: 0.4rem 0.6rem !important;
+  font-weight: 600 !important;
+}
+article td {
+  color: var(--tv-fg) !important;
+  border-bottom: 1px solid var(--tv-border) !important;
+  padding: 0.35rem 0.6rem !important;
+}
+article tr:hover td {
+  background: var(--tv-elevated) !important;
+}
+
+// ── HR divider ───────────────────────────────────────────
+article hr {
+  border: none !important;
+  border-top: 1px solid var(--tv-border) !important;
+  margin: 2rem 0 !important;
+}
+
+// ── Lists ────────────────────────────────────────────────
+article ul li::marker,
+article ol li::marker {
+  color: var(--tv-accent) !important;
+}
+
+// ── Darkmode toggle ──────────────────────────────────────
+.darkmode svg, .darkmode label {
+  color: var(--tv-muted) !important;
+}
+.darkmode:hover svg {
+  color: var(--tv-mid) !important;
+}
+
+// ── Reader mode ──────────────────────────────────────────
+.reader-mode svg {
+  color: var(--tv-muted) !important;
+}
+.reader-mode:hover svg {
+  color: var(--tv-mid) !important;
+}
+
+// ── Note properties panel ────────────────────────────────
+.note-properties {
+  font-size: 0.75rem !important;
+  border: 1px solid var(--tv-border) !important;
+  border-radius: 4px !important;
+  background: var(--tv-elevated) !important;
+  padding: 0.5rem 0.75rem !important;
+  margin-bottom: 1rem !important;
+  color: var(--tv-muted) !important;
+}
+.note-properties strong {
+  color: var(--tv-fg) !important;
+  font-weight: 500 !important;
 }
