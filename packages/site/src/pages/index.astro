@@ -38,7 +38,9 @@ const stats = getStats(noteMetas);
         t.classList.toggle('active', t.dataset.tab === type)
       );
       document.querySelectorAll<HTMLElement>('[data-note-type]').forEach(row => {
-        row.hidden = type !== 'all' && row.dataset.noteType !== type;
+        row.hidden = type !== 'all'
+          && row.dataset.noteType !== type
+          && row.dataset.noteDomain !== type;
       });
     });
   });

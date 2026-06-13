@@ -8,11 +8,13 @@ interface Props {
 }
 const { idx, type, title, slug, created } = Astro.props;
 const dateShort = created.slice(5); // "MM-DD"
+const domain = slug.split('/')[0].replace(/^\d+_/i, '').toLowerCase();
 ---
 <a
   href={`/brain/${slug}`}
   class="note-row"
   data-note-type={type}
+  data-note-domain={domain}
 >
   <span class="note-idx">{String(idx).padStart(2, '0')}</span>
   <span class={`note-type type-${type}`}>{type}</span>

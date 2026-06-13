@@ -382,6 +382,10 @@ a:hover { color: var(--tv-light); text-decoration: underline; }
 
 /* ── Command Palette ── */
 .cmd-palette {
+  position: fixed;
+  top: 20vh;
+  left: 50%;
+  transform: translateX(-50%);
   background: rgba(9, 5, 20, 0.96);
   border: 1px solid rgba(124, 58, 237, 0.35);
   border-radius: 10px;

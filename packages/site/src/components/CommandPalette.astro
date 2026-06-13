@@ -83,11 +83,40 @@
 
   async function doSearch(query: string) {
     if (!query.trim()) { results.innerHTML = ''; return; }
-    const pf = await loadPagefind();
-    const searchResult = await pf.search(query);
-    const items = await Promise.all(
-      searchResult.results.slice(0, 8).map((r: any) => r.data())
-    );
+
+    let items: any[] = [];
+
+    try {
+      const pf = await loadPagefind();
+      if (pf.search) {
+        const searchResult = await pf.search(query);
+        items = await Promise.all(
+          searchResult.results.slice(0, 8).map((r: any) => r.data())
+        );
+      }
+    } catch {
+      // pagefind unavailable
+    }
+
+    // Fallback: search note titles from the DOM
+    if (!items.length) {
+      const q = query.toLowerCase();
+      document.querySelectorAll<HTMLAnchorElement>('.note-row').forEach(row => {
+        const titleEl = row.querySelector('.note-title-text');
+        const typeEl = row.querySelector('[class*="type-"]');
+        if (titleEl?.textContent?.toLowerCase().includes(q)) {
+          items.push({
+            url: row.href,
+            meta: {
+              title: titleEl.textContent,
+              type: typeEl?.textContent ?? 'note',
+            },
+          });
+        }
+      });
+      items = items.slice(0, 8);
+    }
+
     renderResults(items);
   }
 
