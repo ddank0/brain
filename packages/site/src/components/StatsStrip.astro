@@ -1,0 +1,27 @@
+---
+interface Props {
+  total: number;
+  projects: number;
+  studies: number;
+  links: number;
+}
+const { total, projects, studies, links } = Astro.props;
+---
+<div class="stats-strip">
+  <div class="stat-card">
+    <span class="stat-num">{total}</span>
+    <span class="stat-label">notas</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num type-project">{projects}</span>
+    <span class="stat-label">projetos</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num type-study">{studies}</span>
+    <span class="stat-label">estudos</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num stat-muted">{links}</span>
+    <span class="stat-label">links internos</span>
+  </div>
+</div>

@@ -1,0 +1,21 @@
+---
+interface Props {
+  idx: number;
+  type: string;
+  title: string;
+  slug: string;
+  created: string;
+}
+const { idx, type, title, slug, created } = Astro.props;
+const dateShort = created.slice(5); // "MM-DD"
+---
+<a
+  href={`/brain/${slug}`}
+  class="note-row"
+  data-note-type={type}
+>
+  <span class="note-idx">{String(idx).padStart(2, '0')}</span>
+  <span class={`note-type type-${type}`}>{type}</span>
+  <span class="note-title-text">{title}</span>
+  <span class="note-date">{dateShort}</span>
+</a>

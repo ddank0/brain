@@ -1,0 +1,18 @@
+---
+const tabs = ['all', 'dev', 'study', 'project', 'idea'];
+---
+<header class="topbar">
+  <a href="/brain/" class="logo">vault</a>
+  <nav class="tabs">
+    {tabs.map(tab => (
+      <button class="tab" data-tab={tab}>
+        {tab}
+      </button>
+    ))}
+  </nav>
+  <button class="cmd-btn" id="cmd-open" aria-label="Abrir busca (⌘K)">
+    <span class="key">⌘K</span>
+    <span class="cmd-text">buscar</span>
+    <span class="blink"></span>
+  </button>
+</header>

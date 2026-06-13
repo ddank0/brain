@@ -1,0 +1,21 @@
+---
+interface BacklinkRef {
+  slug: string;
+  title: string;
+}
+interface Props {
+  items: BacklinkRef[];
+}
+const { items } = Astro.props;
+---
+{items.length > 0 && (
+  <section class="backlinks">
+    <h3 class="backlinks-title">Backlinks ({items.length})</h3>
+    {items.map(link => (
+      <a href={`/brain/${link.slug}`} class="backlink-row">
+        <span class="arrow">←</span>
+        <span>{link.title}</span>
+      </a>
+    ))}
+  </section>
+)}
