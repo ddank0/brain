@@ -1,11 +1,9 @@
 ---
-title: "brain"
+title: "vault_"
 type: note
 tags: [home]
 created: "2026-05-31"
 ---
-
-# vault_
 
 Second brain pessoal — Dev, Projetos e Estudos.
 

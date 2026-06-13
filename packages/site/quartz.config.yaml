@@ -21,7 +21,7 @@ configuration:
       code: JetBrains Mono
     colors:
       lightMode:
-        light: "#07050F"
+        light: "#0B0A14"
         lightgray: "rgba(124,58,237,0.15)"
         gray: "rgba(196,181,253,0.35)"
         darkgray: "rgba(196,181,253,0.6)"
@@ -31,7 +31,7 @@ configuration:
         highlight: "rgba(109,40,217,0.12)"
         textHighlight: "rgba(124,58,237,0.25)"
       darkMode:
-        light: "#07050F"
+        light: "#0B0A14"
         lightgray: "rgba(124,58,237,0.15)"
         gray: "rgba(196,181,253,0.35)"
         darkgray: "rgba(196,181,253,0.6)"
