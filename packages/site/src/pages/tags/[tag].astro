@@ -1,0 +1,38 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Header from '../../components/Header.astro';
+import NoteList from '../../components/NoteList.astro';
+import CommandPalette from '../../components/CommandPalette.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const notes = await getCollection('vault', ({ id }) => id !== 'index');
+  const tagSet = new Set<string>();
+  notes.forEach(n => n.data.tags.forEach(t => tagSet.add(t)));
+
+  return [...tagSet].map(tag => ({
+    params: { tag },
+    props: {
+      tag,
+      notes: notes.filter(n => n.data.tags.includes(tag)),
+    },
+  }));
+}
+
+const { tag, notes } = Astro.props;
+---
+<BaseLayout title={`#${tag}`}>
+  <Header />
+  <div class="stats-strip">
+    <div class="stat-card">
+      <span class="stat-num">{notes.length}</span>
+      <span class="stat-label">#{tag}</span>
+    </div>
+  </div>
+  <NoteList notes={notes} />
+  <CommandPalette />
+</BaseLayout>
+
+<script>
+  document.querySelector<HTMLButtonElement>('[data-tab="all"]')?.classList.add('active');
+</script>
