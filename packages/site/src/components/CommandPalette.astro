@@ -36,9 +36,12 @@
 
   async function loadPagefind() {
     if (!pagefind) {
-      // @ts-ignore — pagefind is generated at build time
-      pagefind = await import('/brain/pagefind/pagefind.js');
-      await pagefind.init();
+      try {
+        pagefind = await new Function('p', 'return import(p)')('/brain/pagefind/pagefind.js');
+        await pagefind.init();
+      } catch {
+        pagefind = { search: async () => ({ results: [] }) };
+      }
     }
     return pagefind;
   }
