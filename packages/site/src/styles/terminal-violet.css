@@ -171,6 +171,7 @@ a:hover { color: var(--tv-light); text-decoration: underline; }
 }
 
 .note-row:hover { background: var(--tv-elevated); }
+.note-row[hidden] { display: none !important; }
 
 .note-idx {
   color: var(--tv-fg-dim);
