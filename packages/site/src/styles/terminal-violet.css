@@ -70,6 +70,7 @@ a:hover { color: var(--tv-light); text-decoration: underline; }
 }
 
 .tab {
+  display: inline-block;
   background: none;
   border: none;
   color: var(--tv-fg-muted);
@@ -78,10 +79,11 @@ a:hover { color: var(--tv-light); text-decoration: underline; }
   padding: 4px 10px;
   cursor: pointer;
   border-radius: var(--tv-radius);
+  text-decoration: none;
   transition: color 0.1s, background 0.1s;
 }
 
-.tab:hover { color: var(--tv-fg); background: var(--tv-elevated); }
+.tab:hover { color: var(--tv-fg); background: var(--tv-elevated); text-decoration: none; }
 .tab.active { color: var(--tv-mid); background: var(--tv-elevated); }
 
 .cmd-btn {
@@ -243,9 +245,12 @@ a:hover { color: var(--tv-light); text-decoration: underline; }
   gap: 6px;
 }
 
-.breadcrumb a { color: var(--tv-fg-dim); }
-.breadcrumb a:hover { color: var(--tv-mid); }
+.breadcrumb a { color: var(--tv-fg-dim); text-decoration: none; }
+.breadcrumb a:hover { color: var(--tv-mid); text-decoration: none; }
 .breadcrumb-sep { color: rgba(124, 58, 237, 0.5); }
+
+.breadcrumb-back { color: var(--tv-accent) !important; font-weight: 600; }
+.breadcrumb-back:hover { color: var(--tv-light) !important; }
 
 .note-title {
   font-size: 28px;

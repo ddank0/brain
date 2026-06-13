@@ -5,9 +5,11 @@ const tabs = ['all', 'dev', 'study', 'project', 'idea', 'docs'];
   <a href="/brain/" class="logo">brain</a>
   <nav class="tabs">
     {tabs.map(tab => (
-      <button class="tab" data-tab={tab}>
-        {tab}
-      </button>
+      <a
+        href={tab === 'all' ? '/brain/' : `/brain/?tab=${tab}`}
+        class="tab"
+        data-tab={tab}
+      >{tab}</a>
     ))}
   </nav>
   <button class="cmd-btn" id="cmd-open" aria-label="Abrir busca (⌘K)">

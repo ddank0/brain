@@ -30,20 +30,29 @@ const stats = getStats(noteMetas);
 </BaseLayout>
 
 <script>
-  // Tab filter — runs after DOM is ready
-  document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach(tab => {
-    tab.addEventListener('click', () => {
+  function applyTab(type: string) {
+    document.querySelectorAll<HTMLElement>('[data-tab]').forEach(t =>
+      t.classList.toggle('active', t.dataset.tab === type)
+    );
+    document.querySelectorAll<HTMLElement>('[data-note-type]').forEach(row => {
+      row.hidden = type !== 'all'
+        && row.dataset.noteType !== type
+        && row.dataset.noteDomain !== type;
+    });
+  }
+
+  // Intercept tab link clicks: filter in-place instead of navigating
+  document.querySelectorAll<HTMLAnchorElement>('a[data-tab]').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      e.preventDefault();
       const type = tab.dataset.tab!;
-      document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach(t =>
-        t.classList.toggle('active', t.dataset.tab === type)
-      );
-      document.querySelectorAll<HTMLElement>('[data-note-type]').forEach(row => {
-        row.hidden = type !== 'all'
-          && row.dataset.noteType !== type
-          && row.dataset.noteDomain !== type;
-      });
+      const url = type === 'all' ? '/brain/' : `/brain/?tab=${type}`;
+      history.pushState({}, '', url);
+      applyTab(type);
     });
   });
-  // Set 'all' as default active
-  document.querySelector<HTMLButtonElement>('[data-tab="all"]')?.classList.add('active');
+
+  // Apply tab from URL on initial load (handles direct links like /brain/?tab=dev)
+  const urlTab = new URLSearchParams(window.location.search).get('tab') ?? 'all';
+  applyTab(urlTab);
 </script>

@@ -23,17 +23,23 @@ const { title, type, tags, created, status, slug, backlinks } = Astro.props;
 const parts = slug.split('/');
 const domain = parts.length > 1 ? parts[0] : null;
 const noteName = parts[parts.length - 1];
+const tabDomain = domain ? domain.replace(/^\d+_/i, '').toLowerCase() : null;
+const backHref = tabDomain ? `/brain/?tab=${tabDomain}` : '/brain/';
 ---
 <BaseLayout title={title}>
   <Header />
   <main class="note-main">
-    {domain && (
-      <div class="breadcrumb">
-        <span>{domain}</span>
-        <span class="breadcrumb-sep">/</span>
-        <span>{noteName}</span>
-      </div>
-    )}
+    <nav class="breadcrumb">
+      <a href={backHref} class="breadcrumb-back">← brain</a>
+      {tabDomain && (
+        <>
+          <span class="breadcrumb-sep">/</span>
+          <span>{tabDomain}</span>
+        </>
+      )}
+      <span class="breadcrumb-sep">/</span>
+      <span>{noteName}</span>
+    </nav>
     <h1 class="note-title">{title}</h1>
     <div class="tags-row">
       {tags.map(tag => (
