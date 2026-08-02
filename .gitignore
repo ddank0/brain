@@ -14,3 +14,7 @@ packages/site/node_modules/
 packages/site/dist/
 packages/site/.astro/
 !packages/site/public/
+
+# Playwright
+packages/site/test-results/
+packages/site/playwright-report/
