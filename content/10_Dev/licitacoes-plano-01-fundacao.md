@@ -1,5 +1,5 @@
 ---
-title: "Licitações - Plano 01: Fundação"
+title: "Licitações - Plano 01 - Fundação"
 type: note
 tags: [tcc, licitacoes, plano, docker, postgresql, alembic]
 created: "2026-08-02"

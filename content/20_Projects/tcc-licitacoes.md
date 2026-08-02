@@ -18,6 +18,7 @@ O sistema é **analítico e preditivo**. Não substitui auditoria nem caracteriz
 
 | Nota | Conteúdo |
 |------|----------|
+| [[Licitações - Requisitos]] | RF01-RF10 e RNF01-RNF08, com critério de aceitação e status |
 | [[Licitações - Fontes de Dados Públicos]] | Investigação do PNCP e Portal da Transparência, com evidências |
 | [[Licitações - Arquitetura do Sistema]] | Divisão poliglota, contratos entre camadas, alternativas descartadas |
 | [[Licitações - Modelo de Dados]] | Dimensões, fatos, chave natural, índices |
@@ -112,28 +113,21 @@ Os modelos avançados são extensão natural: a interface de `ml/` aceita novo a
 
 ## Rastreabilidade de requisitos
 
-| Requisito | Onde é atendido |
-|---|---|
-| RF01 Importar dados públicos | [[Licitações - Pipeline de Dados]] - `ingest` |
-| RF02 Normalizar informações | [[Licitações - Pipeline de Dados]] - camada silver |
-| RF03 Armazenar no banco | [[Licitações - Modelo de Dados]] |
-| RF04 Consultar licitações | [[Licitações - Arquitetura do Sistema]] - `/licitacoes` |
-| RF05 Análises históricas | [[Licitações - Arquitetura do Sistema]] - `/analytics/*` |
-| RF06 Gerar previsões | [[Licitações - Modelos Preditivos e Anomalias]] |
-| RF07 Detectar anomalias | [[Licitações - Modelos Preditivos e Anomalias]] |
-| RF08 API REST | [[Licitações - Arquitetura do Sistema]] |
-| RF09 Dashboard interativo | Escopo do dashboard, acima |
-| RF10 Logs de processamento | [[Licitações - Modelo de Dados]] - `ingestao_log` |
-| RNF01 Arquitetura modular | [[Licitações - Arquitetura do Sistema]] |
-| RNF02 Manutenibilidade | [[Licitações - Arquitetura do Sistema]] |
-| RNF03 API documentada | OpenAPI versionado |
-| RNF04 Migrations | Alembic |
-| RNF05 Containerização | Docker Compose |
-| RNF06 Tempo de resposta | Resultados materializados; orçamento de desempenho |
-| RNF07 Segurança de acesso | **Parcial** - segredos em variáveis de ambiente. Autenticação de usuários está fora de escopo |
-| RNF08 Extensibilidade de modelos | Interface de `ml/` |
+Os 18 requisitos, com enunciado original, **critério de aceitação verificável**, plano responsável e status, estão em [[Licitações - Requisitos]].
 
-**Sobre o RNF07:** o documento original menciona "segurança no acesso à aplicação". Como autenticação de usuários está fora de escopo, o requisito é atendido apenas parcialmente. A lacuna é registrada para decisão consciente, não omitida.
+Resumo por plano:
+
+| Plano | Semanas | Requisitos |
+|---|---|---|
+| 01 - Fundação | 1-2 | RF03, RF10 (parcial), RNF01, RNF04, RNF05, RNF07 |
+| 02 - ETL | 3-5 | RF01, RF02, RF03, RF10 |
+| 03 - API | 6 | RF04, RF05, RF08, RNF03, RNF06 |
+| 04 - Previsão | 7-9 | RF06 |
+| 05 - Anomalias | 10-12 | RF07, RNF08 |
+| 06 - Dashboard | 13-15 | RF09, RNF06 |
+| 07 - Fechamento | 16 | RNF02 |
+
+**RNF07 é atendido apenas parcialmente** - segredos em variáveis de ambiente, mas sem autenticação de usuários, que está fora de escopo. A lacuna está declarada, não omitida.
 
 ---
 
