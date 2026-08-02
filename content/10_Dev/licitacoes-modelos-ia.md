@@ -1,12 +1,12 @@
 ---
-title: "Licitações — Modelos Preditivos e Anomalias"
+title: "Licitações - Modelos Preditivos e Anomalias"
 type: note
 tags: [tcc, licitacoes, ia, machine-learning, series-temporais, estatistica]
 created: "2026-08-02"
 status: ready
 ---
 
-Módulos de IA do [[TCC — Sistema Inteligente para Licitações]]. Dois módulos independentes, ambos executados em lote e materializando resultados em tabelas — ver [[Licitações — Modelo de Dados]].
+Módulos de IA do [[TCC - Sistema Inteligente para Licitações]]. Dois módulos independentes, ambos executados em lote e materializando resultados em tabelas - ver [[Licitações - Modelo de Dados]].
 
 ## Módulo de previsão
 
@@ -16,11 +16,11 @@ Módulos de IA do [[TCC — Sistema Inteligente para Licitações]]. Dois módul
 
 **Motor: `statsforecast`.** Treinar por órgão significa centenas de séries independentes; o AutoARIMA compilado com Numba resolve isso em ordem de grandeza menor de tempo que o ajuste sequencial interpretado. O `statsmodels` permanece com papel restrito: gerar o sumário estatístico e os testes de resíduo do modelo final, conteúdo relevante para a monografia. Como a previsão é univariada, não há variáveis exógenas e os dois produzem resultado equivalente.
 
-### Avaliação — backtesting com janela deslizante
+### Avaliação - backtesting com janela deslizante
 
 Divisão aleatória treino/teste é **inadmissível** em séries temporais porque vaza informação futura para o passado. O protocolo é: treinar até a competência *t*, prever *t+1..t+h*, avançar a janela, repetir.
 
-**Métricas:** MAE, RMSE e MAPE, sempre **em comparação com baseline sazonal ingênuo** — a previsão para o mês *m* é o valor do mês *m* do ano anterior.
+**Métricas:** MAE, RMSE e MAPE, sempre **em comparação com baseline sazonal ingênuo** - a previsão para o mês *m* é o valor do mês *m* do ano anterior.
 
 Sem esse baseline, uma métrica de erro isolada não sustenta afirmação de valor. É a primeira pergunta que uma banca competente faz.
 
@@ -28,7 +28,7 @@ Sem esse baseline, uma métrica de erro isolada não sustenta afirmação de val
 
 ## Módulo de detecção de anomalias
 
-**Modelo inicial:** `IsolationForest`. **Método de contraste:** `LocalOutlierFactor`. Ambos no scikit-learn — sem necessidade de dependência adicional.
+**Modelo inicial:** `IsolationForest`. **Método de contraste:** `LocalOutlierFactor`. Ambos no scikit-learn - sem necessidade de dependência adicional.
 
 ### Atributos
 
@@ -42,7 +42,7 @@ Sem esse baseline, uma métrica de erro isolada não sustenta afirmação de val
 | Intervalo entre `data_abertura` e `data_resultado` | `licitacao` | Prazos atípicos |
 | Desvio sazonal em relação ao padrão do órgão | `serie_mensal` | Concentração incomum, p.ex. fim de exercício |
 
-Os três em destaque só são construíveis porque `ParticipantesLicitação.csv` fornece o conjunto de concorrentes com identificação do vencedor. É o que distingue este trabalho de um detector genérico de outlier de valor, e o argumento central da escolha da fonte — ver [[Licitações — Fontes de Dados Públicos]].
+Os três em destaque só são construíveis porque `ParticipantesLicitação.csv` fornece o conjunto de concorrentes com identificação do vencedor. É o que distingue este trabalho de um detector genérico de outlier de valor, e o argumento central da escolha da fonte - ver [[Licitações - Fontes de Dados Públicos]].
 
 Todos são agregações, portanto vetorizáveis em Polars. Nenhum exige laço por registro.
 
@@ -52,7 +52,7 @@ Todos são agregações, portanto vetorizáveis em Polars. Nenhum exige laço po
 
 Não existe conjunto rotulado de "licitações anômalas". Esta é a **principal fragilidade metodológica** do módulo, e é enfrentada explicitamente por três frentes:
 
-1. **Injeção de anomalias sintéticas.** Perturbar registros reais de forma controlada — inflar valor, reduzir participantes a um, concentrar vitórias — e medir precisão e recall na recuperação desses casos. Produz números objetivos.
+1. **Injeção de anomalias sintéticas.** Perturbar registros reais de forma controlada - inflar valor, reduzir participantes a um, concentrar vitórias - e medir precisão e recall na recuperação desses casos. Produz números objetivos.
 2. **Concordância entre métodos independentes.** Comparar os conjuntos sinalizados por Isolation Forest e LOF. Alta concordância sugere estrutura real no dado, não artefato de um algoritmo.
 3. **Análise qualitativa dos 20 primeiros.** Inspeção caso a caso, com justificativa escrita do que torna cada registro atípico. Frágil isoladamente, valiosa como triangulação e como conteúdo de discussão.
 
@@ -60,7 +60,7 @@ A ausência de rótulos deve ser **declarada como limitação** no texto, não c
 
 ---
 
-## Restrição de produto — atipicidade não é fraude
+## Restrição de produto - atipicidade não é fraude
 
 O documento original estabelece que o sistema não caracteriza fraude. Isso é implementado como comportamento observável, não apenas como texto na monografia:
 
@@ -72,4 +72,4 @@ O documento original estabelece que o sistema não caracteriza fraude. Isso é i
 
 ## Extensões previstas
 
-A interface de `ml/` aceita novo algoritmo sem alteração em `api/` ou `etl/` — satisfaz o RNF08. Candidatos fora do escopo deste ciclo: Prophet, XGBoost e LSTM na previsão; DBSCAN, Autoencoders e One-Class SVM nas anomalias; SHAP para explicabilidade formal.
+A interface de `ml/` aceita novo algoritmo sem alteração em `api/` ou `etl/` - satisfaz o RNF08. Candidatos fora do escopo deste ciclo: Prophet, XGBoost e LSTM na previsão; DBSCAN, Autoencoders e One-Class SVM nas anomalias; SHAP para explicabilidade formal.

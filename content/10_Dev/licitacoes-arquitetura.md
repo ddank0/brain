@@ -1,12 +1,12 @@
 ---
-title: "Licitações — Arquitetura do Sistema"
+title: "Licitações - Arquitetura do Sistema"
 type: note
 tags: [tcc, licitacoes, arquitetura, python, php, angular, docker]
 created: "2026-08-02"
 status: ready
 ---
 
-Arquitetura do [[TCC — Sistema Inteligente para Licitações]]. Três camadas, cada uma na linguagem onde é mais efetiva, comunicando-se apenas por contratos externos ao código.
+Arquitetura do [[TCC - Sistema Inteligente para Licitações]]. Três camadas, cada uma na linguagem onde é mais efetiva, comunicando-se apenas por contratos externos ao código.
 
 ```
 ┌──────────────────────┐   escreve   ┌────────────┐   lê    ┌─────────────┐  HTTP   ┌───────────┐
@@ -22,7 +22,7 @@ Arquitetura do [[TCC — Sistema Inteligente para Licitações]]. Três camadas,
 | Camada | Linguagem | Justificativa |
 |---|---|---|
 | **Jobs** | Python | Única com ecossistema maduro de séries temporais e detecção de anomalias. Polars/DuckDB cobrem 29M linhas com desempenho nativo |
-| **API** | PHP 8.3 / Laravel | Só consulta tabelas e serializa JSON — sem impedimento técnico. Fluência do autor supera diferença de desempenho, irrelevante nesta carga |
+| **API** | PHP 8.3 / Laravel | Só consulta tabelas e serializa JSON - sem impedimento técnico. Fluência do autor supera diferença de desempenho, irrelevante nesta carga |
 | **Dashboard** | Angular | Fluência do autor. Tipagem forte casa com cliente gerado do OpenAPI |
 
 ### Por que Python é obrigatório nos jobs
@@ -33,7 +33,7 @@ Não há em PHP equivalente maduro a SARIMAX com seleção automática de ordem,
 
 - Três toolchains: `uv`, `composer`, `npm`
 - Três Dockerfiles e três suítes de teste
-- **Definição do esquema duplicada** entre SQLAlchemy (jobs) e Eloquent (API) — mitigada pela propriedade única do Alembic
+- **Definição do esquema duplicada** entre SQLAlchemy (jobs) e Eloquent (API) - mitigada pela propriedade única do Alembic
 
 Aceito porque a fluência do autor nas camadas de interface reduz o tempo de desenvolvimento mais do que a duplicação o aumenta.
 
@@ -61,7 +61,7 @@ A especificação é exportada para o repositório a cada alteração de contrat
 
 ### Substituibilidade
 
-Cada seta do diagrama é um formato aberto. Reescrever a API em Go significa implementar o mesmo OpenAPI sobre as mesmas tabelas — nada mais muda. Reescrever o ETL em Rust significa produzir os mesmos Parquet com o mesmo esquema.
+Cada seta do diagrama é um formato aberto. Reescrever a API em Go significa implementar o mesmo OpenAPI sobre as mesmas tabelas - nada mais muda. Reescrever o ETL em Rust significa produzir os mesmos Parquet com o mesmo esquema.
 
 **Custo desta portabilidade em desempenho: zero.** Não há indireção adicional em tempo de execução; é disciplina sobre onde as fronteiras ficam.
 
@@ -82,7 +82,7 @@ Três abstrações degradariam o desempenho sem oferecer portabilidade real:
 | Camada | Tecnologia | Critério decisivo |
 |---|---|---|
 | Gerenciador Python | **uv** | Resolução e instalação em segundos; lockfile confiável |
-| Formato intermediário | **Parquet** | Colunar e comprimido; ~800 MB de CSV → ~100–150 MB |
+| Formato intermediário | **Parquet** | Colunar e comprimido; ~800 MB de CSV → ~100-150 MB |
 | Transformação | **Polars** | Execução paralela e *lazy*; motor em Rust |
 | Exploração ad-hoc | **DuckDB** | SQL direto sobre Parquet; fora do caminho crítico |
 | Banco | **PostgreSQL 16** | Especificado no documento original; funções de janela nativas |
@@ -97,7 +97,7 @@ Três abstrações degradariam o desempenho sem oferecer portabilidade real:
 
 ### Nota sobre o desempenho do Python
 
-Polars é escrito em Rust, DuckDB em C++, NumPy em C, scikit-learn em Cython, e statsforecast compila com Numba/LLVM. Ao processar 21,8 milhões de registros, os dados **não passam pelo interpretador Python** — ele apenas monta o plano de execução. O custo de interpretação incide sobre dezenas de chamadas de função, não sobre milhões de linhas.
+Polars é escrito em Rust, DuckDB em C++, NumPy em C, scikit-learn em Cython, e statsforecast compila com Numba/LLVM. Ao processar 21,8 milhões de registros, os dados **não passam pelo interpretador Python** - ele apenas monta o plano de execução. O custo de interpretação incide sobre dezenas de chamadas de função, não sobre milhões de linhas.
 
 Consequência de projeto: **não escrever laços em Python sobre registros**. Toda transformação em operações vetorizadas do Polars.
 
@@ -109,37 +109,37 @@ Em benchmark sintético, runtimes compilados superam PHP em ordem de grandeza. I
 
 ## Alternativas de arquitetura consideradas
 
-### Escolhida — jobs em lote com resultados materializados
+### Escolhida - jobs em lote com resultados materializados
 
 Treino e inferência executam **offline via linha de comando** e gravam previsões e scores como **tabelas**. A API lê apenas tabelas e nunca invoca modelo.
 
 - Respostas em milissegundos, sem cache adicional
 - Reprocessamento e comparação entre execuções são triviais
-- Histórico auditável de scores — pré-requisito para avaliar o detector
+- Histórico auditável de scores - pré-requisito para avaliar o detector
 - Jobs podem demorar horas sem afetar o tempo de resposta
 
-### Microsserviços — descartada
+### Microsserviços - descartada
 
 Converter cada job em serviço HTTP de longa duração.
 
-1. **Natureza do problema.** Microsserviços resolvem deploy independente entre times e escalonamento sob carga de requisições. O processamento é em lote, feito por uma pessoa — nenhum dos dois problemas existe.
-2. **Banco compartilhado.** Os jobs trocam gigabytes; transportar isso por HTTP é inviável. Continuariam compartilhando banco e filesystem, configurando o anti-padrão do banco compartilhado — custo operacional de sistemas distribuídos sem o benefício do isolamento de dados. Isto é um **monolito distribuído**.
-3. **Custo.** De 3 para 8–10 contêineres, exigindo fila, broker, orquestrador, healthchecks e rastreamento distribuído. Estimativa de 3–5 semanas, subtraídas da avaliação de modelos.
-4. **Isolamento já existe.** Os jobs são processos independentes, sem memória compartilhada, comunicando por contrato de dados. A única diferença para um microsserviço é o servidor HTTP — que traz todo o custo e nenhum benefício aqui.
+1. **Natureza do problema.** Microsserviços resolvem deploy independente entre times e escalonamento sob carga de requisições. O processamento é em lote, feito por uma pessoa - nenhum dos dois problemas existe.
+2. **Banco compartilhado.** Os jobs trocam gigabytes; transportar isso por HTTP é inviável. Continuariam compartilhando banco e filesystem, configurando o anti-padrão do banco compartilhado - custo operacional de sistemas distribuídos sem o benefício do isolamento de dados. Isto é um **monolito distribuído**.
+3. **Custo.** De 3 para 8-10 contêineres, exigindo fila, broker, orquestrador, healthchecks e rastreamento distribuído. Estimativa de 3-5 semanas, subtraídas da avaliação de modelos.
+4. **Isolamento já existe.** Os jobs são processos independentes, sem memória compartilhada, comunicando por contrato de dados. A única diferença para um microsserviço é o servidor HTTP - que traz todo o custo e nenhum benefício aqui.
 
 O documento original do TCC já classifica microsserviços como evolução futura.
 
-### Camada analítica SQL versionada, estilo dbt — descartada
+### Camada analítica SQL versionada, estilo dbt - descartada
 
-Renderia capítulo sobre modelagem dimensional, ao custo de 2–3 semanas subtraídas da avaliação de modelos. A arquitetura medalhão captura parte do benefício sem esse custo.
+Renderia capítulo sobre modelagem dimensional, ao custo de 2-3 semanas subtraídas da avaliação de modelos. A arquitetura medalhão captura parte do benefício sem esse custo.
 
-### Computação sob demanda na API — rejeitada
+### Computação sob demanda na API - rejeitada
 
 A API ajustaria os modelos no momento da requisição. **Inviável:** o ajuste de um SARIMA leva de segundos a minutos, estourando qualquer timeout de HTTP. Registrada para descarte fundamentado na monografia.
 
-### Spark — descartada
+### Spark - descartada
 
-**Motivo: dimensionamento.** Spark resolve dados que não cabem em uma máquina — tipicamente centenas de GB. O volume aqui é de 1–2 GB. Rodando localmente, como se faz em TCC, paga-se JVM, configuração e depuração distribuída sem receber o benefício, pois continua sendo uma máquina só.
+**Motivo: dimensionamento.** Spark resolve dados que não cabem em uma máquina - tipicamente centenas de GB. O volume aqui é de 1-2 GB. Rodando localmente, como se faz em TCC, paga-se JVM, configuração e depuração distribuída sem receber o benefício, pois continua sendo uma máquina só.
 
 A escolha por Polars/DuckDB não abre mão de desempenho: ambos são nativos (Rust e C++). A decisão demonstra **critério de dimensionamento**, argumento mais defensável em banca que ferramenta desproporcional ao problema.
 
@@ -150,14 +150,14 @@ A escolha por Polars/DuckDB não abre mão de desempenho: ambos são nativos (Ru
 ```
 .
 ├── docker-compose.yml
-├── jobs/                          # Python — batch
+├── jobs/                          # Python - batch
 │   ├── pyproject.toml             # uv
 │   ├── Dockerfile
 │   ├── alembic.ini
 │   ├── src/tcc_jobs/
 │   │   ├── core/                  # config, logging
 │   │   ├── db/
-│   │   │   ├── models/            # SQLAlchemy — proprietário do esquema
+│   │   │   ├── models/            # SQLAlchemy - proprietário do esquema
 │   │   │   └── migrations/        # Alembic
 │   │   ├── etl/
 │   │   │   ├── download.py        # → bronze/
@@ -169,13 +169,13 @@ A escolha por Polars/DuckDB não abre mão de desempenho: ambos são nativos (Ru
 │   │   │   ├── forecast.py        # statsforecast
 │   │   │   ├── anomaly.py         # scikit-learn
 │   │   │   └── evaluation.py      # backtesting e métricas
-│   │   └── cli.py                 # Typer — 5 comandos
+│   │   └── cli.py                 # Typer - 5 comandos
 │   └── tests/
 ├── api/                           # PHP 8.3 / Laravel
 │   ├── composer.json
 │   ├── Dockerfile
 │   ├── app/
-│   │   ├── Models/                # Eloquent — somente leitura
+│   │   ├── Models/                # Eloquent - somente leitura
 │   │   ├── Http/Controllers/
 │   │   └── Http/Resources/
 │   ├── routes/api.php
@@ -245,4 +245,4 @@ Alvos verificáveis, para que "está rápido" seja medição e não impressão:
 | Endpoints analíticos (p95) | < 500 ms |
 | Carga inicial de uma tela do dashboard | < 2 s |
 
-Se um alvo for perdido, a causa provável é abstração indevida no caminho quente — ver "Onde não desacoplar", acima.
+Se um alvo for perdido, a causa provável é abstração indevida no caminho quente - ver "Onde não desacoplar", acima.

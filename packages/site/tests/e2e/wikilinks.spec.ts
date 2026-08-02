@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
  * Regressão: buildSlugMap preservava o case do caminho no vault
  * (20_Projects/...), mas o glob loader do Astro normaliza note.id para
  * lowercase e as rotas saem de note.id. Todo wikilink para nota em subpasta
- * gerava href 404 — o GitHub Pages é case-sensitive.
+ * gerava href 404 - o GitHub Pages é case-sensitive.
  */
 
 async function listarPaginasDeNotas(page): Promise<string[]> {

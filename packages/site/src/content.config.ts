@@ -8,7 +8,7 @@ const vaultPath = process.env.VAULT_PATH ?? resolve(__dirname, '../../../content
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
-// Espelha schemas/*.json — as duas definições devem mudar juntas.
+// Espelha schemas/*.json - as duas definições devem mudar juntas.
 const base = {
   title: z.string().min(1),
   tags: z.array(z.string()).min(1),

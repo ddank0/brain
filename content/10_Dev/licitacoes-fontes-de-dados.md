@@ -1,14 +1,14 @@
 ---
-title: "Licitações — Fontes de Dados Públicos"
+title: "Licitações - Fontes de Dados Públicos"
 type: note
 tags: [tcc, licitacoes, dados, api, etl]
 created: "2026-08-02"
 status: ready
 ---
 
-Investigação das fontes públicas de dados de licitações federais para o [[TCC — Sistema Inteligente para Licitações]]. Todas testadas empiricamente em 2026-08-01 — os resultados são reproduzíveis e servem de material para o capítulo de metodologia.
+Investigação das fontes públicas de dados de licitações federais para o [[TCC - Sistema Inteligente para Licitações]]. Todas testadas empiricamente em 2026-08-01 - os resultados são reproduzíveis e servem de material para o capítulo de metodologia.
 
-## PNCP — Portal Nacional de Contratações Públicas
+## PNCP - Portal Nacional de Contratações Públicas
 
 Fonte legalmente vigente sob a Lei 14.133/2021, cobrindo União, estados e municípios.
 
@@ -16,20 +16,20 @@ Fonte legalmente vigente sob a Lei 14.133/2021, cobrindo União, estados e munic
 
 - Endpoint: `https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao`
 - `codigoModalidadeContratacao` é obrigatório; `tamanhoPagina` mínimo é 10
-- Resultado: `HTTP 500 — Erro na comunicação com o banco de dados`, `HTTP 500 — Failed to obtain JDBC Connection`, seguidos de **4 timeouts consecutivos** em janelas de 20s e 45s
+- Resultado: `HTTP 500 - Erro na comunicação com o banco de dados`, `HTTP 500 - Failed to obtain JDBC Connection`, seguidos de **4 timeouts consecutivos** em janelas de 20s e 45s
 - A rede estava íntegra: o Portal da Transparência respondeu em milissegundos nos mesmos testes
 
 **Avaliação:** correta do ponto de vista legal, instável do operacional. Histórico limitado a ~2021 em diante (~60 meses), insuficiente para sustentar sazonalidade anual com folga.
 
-## Portal da Transparência — API REST
+## Portal da Transparência - API REST
 
 - OpenAPI v1.0 em `/v3/api-docs`, com 19 endpoints de licitações e contratos
 - Exige chave gratuita, por cadastro de e-mail
-- **Limitação estrutural:** `codigoOrgao` é obrigatório em `/api-de-dados/licitacoes` e `/api-de-dados/contratos`. Não dá para varrer por período — seria preciso iterar órgão × período, gerando centenas de requisições sujeitas a limite de taxa
+- **Limitação estrutural:** `codigoOrgao` é obrigatório em `/api-de-dados/licitacoes` e `/api-de-dados/contratos`. Não dá para varrer por período - seria preciso iterar órgão × período, gerando centenas de requisições sujeitas a limite de taxa
 
 **Avaliação:** boa para consulta pontual, inadequada para carga histórica em massa.
 
-## Portal da Transparência — download em massa
+## Portal da Transparência - download em massa
 
 **Fonte escolhida.**
 
@@ -50,13 +50,13 @@ Fonte legalmente vigente sob a Lei 14.133/2021, cobrindo União, estados e munic
 
 **Formato:** `latin-1`, separador `;`, decimal com vírgula (`170612,0000`), datas em `DD/MM/AAAA`.
 
-O arquivo de participantes é o achado mais valioso: ter o conjunto de concorrentes por licitação, com identificação do vencedor, permite atributos de anomalia estruturalmente mais informativos que detecção de outlier de valor. Ver [[Licitações — Modelos Preditivos e Anomalias]].
+O arquivo de participantes é o achado mais valioso: ter o conjunto de concorrentes por licitação, com identificação do vencedor, permite atributos de anomalia estruturalmente mais informativos que detecção de outlier de valor. Ver [[Licitações - Modelos Preditivos e Anomalias]].
 
 ---
 
 ## Decisão: abordagem híbrida
 
-**Fonte primária:** CSVs do Portal da Transparência, `201301`–`202404` (~135 meses).
+**Fonte primária:** CSVs do Portal da Transparência, `201301`-`202404` (~135 meses).
 **Fonte bônus:** conector PNCP, apenas se houver tempo residual.
 
 **Justificativa:**
@@ -64,7 +64,7 @@ O arquivo de participantes é o achado mais valioso: ter o conjunto de concorren
 1. **Extensão da série.** SARIMA com sazonalidade anual requer múltiplos ciclos completos. 135 meses sustentam isso com folga; ~60 do PNCP não.
 2. **Reprodutibilidade.** Arquivos estáticos não caem na véspera da defesa. Dada a instabilidade medida do PNCP, isso vale mais que atualidade num trabalho com prazo fixo.
 3. **Riqueza do dado.** A tripla licitação/itens/participantes habilita atributos que o PNCP não expõe com a mesma facilidade.
-4. **Valor acadêmico da limitação.** O corte em abr/2024 documenta uma descontinuidade regulatória real — vira seção de metodologia, não confissão de fragilidade.
+4. **Valor acadêmico da limitação.** O corte em abr/2024 documenta uma descontinuidade regulatória real - vira seção de metodologia, não confissão de fragilidade.
 
 **Risco assumido:** se a banca exigir dados do regime vigente, o recorte pode ser questionado. **Mitigação:** o conector PNCP, se implementado, demonstra que a arquitetura suporta a fonte atual.
 
@@ -87,4 +87,4 @@ O arquivo de participantes é o achado mais valioso: ter o conjunto de concorren
 | `item_licitacao` | 51.808 | ~7 milhões |
 | `participante_licitacao` | 161.400 | ~21,8 milhões |
 
-Total aproximado de 29 milhões de linhas, entre 1 e 2 GB em disco. Volume que **cabe confortavelmente na memória de uma máquina** — não caracteriza processamento distribuído. Ver a decisão de dimensionamento em [[Licitações — Arquitetura do Sistema]].
+Total aproximado de 29 milhões de linhas, entre 1 e 2 GB em disco. Volume que **cabe confortavelmente na memória de uma máquina** - não caracteriza processamento distribuído. Ver a decisão de dimensionamento em [[Licitações - Arquitetura do Sistema]].
