@@ -10,9 +10,9 @@ status: ready
 
 **Objetivo:** deixar os quatro repositórios operacionais, com PostgreSQL de pé, esquema completo aplicado por migration e suíte de testes rodando em cada stack.
 
-**Arquitetura:** `tcc-infra` sobe PostgreSQL via Docker Compose. `tcc-jobs` define o esquema em SQLAlchemy e o aplica por Alembic - é o dono do banco. `tcc-api` e `tcc-frontend` ganham esqueleto mínimo com healthcheck e teste, provando que a cadeia inteira funciona antes de qualquer regra de negócio.
+**Arquitetura:** desenvolvimento **container-first** - o host só precisa de Docker. `tcc-infra` sobe PostgreSQL via Docker Compose. `tcc-jobs` define o esquema em SQLAlchemy e o aplica por Alembic - é o dono do banco. `tcc-api` e `tcc-frontend` ganham esqueleto mínimo com healthcheck e teste, provando que a cadeia inteira funciona antes de qualquer regra de negócio.
 
-**Stack:** Docker Compose, PostgreSQL 16, Python 3.12 + uv + SQLAlchemy 2.0 + Alembic + Typer, PHP 8.3 + Laravel, Angular 20.
+**Stack:** Docker Compose com Dockerfiles multi-stage (`dev` e `prod`), PostgreSQL 16, Python 3.12 + uv + SQLAlchemy 2.0 + Alembic + Typer, PHP 8.3 + Laravel, Angular. Código do host chega aos containers por bind mount; dependências ficam em volumes nomeados.
 
 **Cobre:** semanas 1-2 do cronograma. RNF01, RNF04, RNF05.
 
@@ -41,28 +41,29 @@ Verificado em 2026-08-02, WSL2 Ubuntu 24.04:
 
 | Ferramenta | Estado |
 |---|---|
-| Python 3.12.3 | instalado |
+| Python 3.12.3 | instalado (usado só fora do container, se preciso) |
 | Node 22.22.0 | instalado |
 | uv 0.12.1 | instalado em `~/.local/bin` |
 | gh 2.97.0 | instalado, autenticado como `ddank0` |
-| **Docker** | **ausente** |
-| **PHP / Composer** | **ausente** |
+| **Docker** | **ausente - único bloqueio** |
 
-`sudo` exige senha, então a Tarefa 0 precisa ser executada pelo autor.
+O desenvolvimento é **container-first**: PHP, Composer e as dependências de cada stack vivem apenas nas imagens. O host precisa só de Docker. Isso elimina divergência de versão entre máquina e container, e torna verdadeira a frase "clone e rode `docker compose up`" - que é critério de sucesso do projeto.
 
----
+`sudo` exige senha, então a Tarefa 0 é executada pelo autor.
 
 ## Estrutura de arquivos
 
 **tcc-infra**
 ```
-docker-compose.yml      postgres (e depois api, frontend)
+docker-compose.yml      postgres, jobs, api, frontend - todos em modo dev
 .env.example            variáveis sem valores reais
 scripts/init-test-db.sh cria o banco de teste na inicialização
+Makefile                atalhos que atravessam os cinco repositórios
 ```
 
 **tcc-jobs**
 ```
+Dockerfile                   multi-stage: dev (bind mount) e prod (embutido)
 pyproject.toml               dependências e scripts (uv)
 alembic.ini                  configuração do Alembic
 src/tcc_jobs/
@@ -82,20 +83,35 @@ tests/
 └── test_migrations.py
 ```
 
-**tcc-api**: esqueleto Laravel + `routes/api.php` com `/health` + teste.
-**tcc-frontend**: esqueleto Angular + serviço de health + teste.
+**tcc-api**
+```
+Dockerfile              multi-stage: dev (bind mount) e prod (código embutido)
+routes/api.php          GET /health
+tests/Feature/HealthTest.php
+database/migrations/README.md   aviso: o dono do esquema é o Alembic
+```
+
+**tcc-frontend**
+```
+Dockerfile              multi-stage: dev (ng serve), build e prod (nginx)
+src/environments/environment.ts
+src/app/core/health.service.ts
+src/app/core/health.service.spec.ts
+```
+
+Nos três repositórios o padrão é o mesmo: o estágio `dev` não copia código - ele chega por bind mount, e as dependências ficam em volume nomeado, fora do repositório. O estágio `prod` embute tudo e descarta ferramentas de desenvolvimento.
 
 ---
 
-## Tarefa 0: Preparar o ambiente
+## Tarefa 0: Instalar o Docker
 
-Só o autor pode executar - exige `sudo` e interação.
+Só o autor pode executar - exige `sudo`. É o único pré-requisito do host.
 
 **Arquivos:** nenhum.
 
-- [ ] **Passo 1: Instalar Docker**
+- [ ] **Passo 1: Instalar**
 
-No WSL2 o caminho mais simples é o Docker Desktop no Windows com integração WSL2 ativada (Settings → Resources → WSL Integration → habilitar a distro Ubuntu). Alternativa sem Docker Desktop:
+No WSL2, o caminho mais simples é o Docker Desktop no Windows com integração WSL2 ativada (Settings → Resources → WSL Integration → habilitar a distro Ubuntu). Alternativa sem Docker Desktop:
 
 ```bash
 sudo apt update && sudo apt install -y docker.io docker-compose-v2
@@ -104,7 +120,7 @@ sudo usermod -aG docker $USER
 
 Depois **feche e reabra o terminal** para o grupo valer.
 
-- [ ] **Passo 2: Verificar Docker**
+- [ ] **Passo 2: Verificar**
 
 ```bash
 docker run --rm hello-world
@@ -113,34 +129,30 @@ docker compose version
 
 Esperado: mensagem de boas-vindas e versão do compose. Se pedir `sudo`, o grupo ainda não aplicou - reabra o terminal.
 
-- [ ] **Passo 3: Instalar PHP 8.3 e Composer**
+- [ ] **Passo 3: Definir o compose padrão do shell**
+
+O `docker compose` respeita a variável `COMPOSE_FILE`. Defini-la permite rodar os comandos de qualquer diretório, sem `-f` a cada vez:
 
 ```bash
-sudo apt install -y php8.3-cli php8.3-pgsql php8.3-mbstring php8.3-xml php8.3-curl unzip
-curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+echo 'export COMPOSE_FILE=$HOME/dev/TCC/tcc-infra/docker-compose.yml' >> ~/.bashrc
+source ~/.bashrc
+echo $COMPOSE_FILE
 ```
 
-- [ ] **Passo 4: Verificar**
+Esperado: o caminho impresso. Todos os comandos `docker compose` do restante do plano assumem isso.
 
-```bash
-php --version && composer --version && uv --version && node --version
-```
+> PHP, Composer e as dependências Python ficam nas imagens. Não instale nada disso no host: divergência entre a versão local e a do container é justamente a classe de erro que o container-first elimina.
 
-Esperado: PHP 8.3.x, Composer 2.x, uv 0.12.x, Node v22.x.
-
-> `php8.3-pgsql` é obrigatório - sem ele o Laravel não conecta ao PostgreSQL, e o erro que aparece (`could not find driver`) não diz isso claramente.
-
----
-
-## Tarefa 1: PostgreSQL no Docker Compose
+## Tarefa 1: Compose com PostgreSQL e o container de jobs
 
 **Arquivos:**
 - Criar: `tcc-infra/docker-compose.yml`
 - Criar: `tcc-infra/.env.example`
 - Criar: `tcc-infra/scripts/init-test-db.sh`
+- Criar: `tcc-jobs/Dockerfile`
 
 **Interfaces:**
-- Produz: PostgreSQL em `localhost:5432`, bancos `tcc` e `tcc_test`, credenciais vindas do `.env`.
+- Produz: PostgreSQL em `localhost:5432` com os bancos `tcc` e `tcc_test`; serviço `jobs` de pé, com o código do host montado em `/app`, pronto para `docker compose exec`.
 
 - [ ] **Passo 1: Criar o `.env.example`**
 
@@ -171,7 +183,48 @@ chmod +x tcc-infra/scripts/init-test-db.sh
 
 > Scripts em `/docker-entrypoint-initdb.d/` rodam apenas na primeira inicialização do volume. Se o banco de teste não aparecer, é porque o volume já existia: `docker compose down -v` e suba de novo.
 
-- [ ] **Passo 3: Criar o `docker-compose.yml`**
+- [ ] **Passo 3: Dockerfile multi-stage dos jobs**
+
+Arquivo `tcc-jobs/Dockerfile`:
+
+```dockerfile
+# --- desenvolvimento: sem código embutido, chega por bind mount ---
+FROM python:3.12-slim AS dev
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+ENV UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app
+CMD ["sleep", "infinity"]
+
+# --- produção: código embutido, sem dependências de desenvolvimento ---
+FROM python:3.12-slim AS prod
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+ENV UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev
+COPY . .
+
+ENTRYPOINT ["uv", "run", "tcc"]
+CMD ["--help"]
+```
+
+Dois detalhes que evitam dor de cabeça:
+
+`UV_PROJECT_ENVIRONMENT=/opt/venv` põe o ambiente virtual **fora** de `/app`. Sem isso, o `.venv` criado no container seria escrito na pasta do host pelo bind mount, misturando binários Linux do container com o que você tenha no WSL.
+
+O estágio `dev` não copia código nem roda `uv sync` no build. O código chega por bind mount e as dependências são instaladas depois - por isso este Dockerfile funciona mesmo antes de o `pyproject.toml` existir, que é o caso agora.
+
+- [ ] **Passo 4: Criar o `docker-compose.yml`**
 
 ```yaml
 services:
@@ -194,33 +247,73 @@ services:
       timeout: 5s
       retries: 10
 
+  jobs:
+    build:
+      context: ../tcc-jobs
+      target: dev
+    container_name: tcc-jobs
+    volumes:
+      - ../tcc-jobs:/app
+      - jobs-venv:/opt/venv
+      - ../data:/data
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      TEST_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}_test
+      DATA_DIR: /data
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   pgdata:
+  jobs-venv:
 ```
 
-- [ ] **Passo 4: Subir e verificar**
+O serviço `jobs` usa `sleep infinity` para ficar de pé e aceitar `docker compose exec` - que é instantâneo, enquanto `docker compose run` criaria um container novo a cada teste. Numa fase com dezenas de ciclos TDD, a diferença é sentida.
+
+`jobs-venv` é volume nomeado, não bind mount: o ambiente virtual pertence ao container e não polui o repositório.
+
+- [ ] **Passo 5: Subir**
 
 ```bash
-cd tcc-infra
+cd ~/dev/TCC/tcc-infra
 cp .env.example .env
-docker compose up -d
+mkdir -p ../data
+docker compose up -d --build
 docker compose ps
 ```
 
-Esperado: `tcc-postgres` com status `healthy`.
+Esperado: `tcc-postgres` com status `healthy` e `tcc-jobs` em execução.
+
+- [ ] **Passo 6: Verificar os bancos**
 
 ```bash
 docker compose exec postgres psql -U tcc -l
 ```
 
-Esperado: os bancos `tcc` e `tcc_test` na listagem.
+Esperado: `tcc` e `tcc_test` na listagem.
 
-- [ ] **Passo 5: Commit**
+- [ ] **Passo 7: Verificar o container de jobs**
 
 ```bash
-cd tcc-infra
+docker compose exec jobs python --version
+docker compose exec jobs uv --version
+docker compose exec jobs ls /app
+```
+
+Esperado: Python 3.12.x, uv instalado, e `/app` mostrando os arquivos de `tcc-jobs` (README.md, .gitignore, Dockerfile).
+
+- [ ] **Passo 8: Commit**
+
+```bash
+cd ~/dev/TCC/tcc-infra
 git add docker-compose.yml .env.example scripts/init-test-db.sh
-git commit -m "feat: sobe postgres 16 com banco de teste separado"
+git commit -m "feat: compose com postgres e container de desenvolvimento dos jobs"
+git push origin main
+
+cd ~/dev/TCC/tcc-jobs
+git add Dockerfile
+git commit -m "feat: dockerfile multi-stage com estágios dev e prod"
 git push origin main
 ```
 
@@ -328,9 +421,9 @@ def test_data_dir_tem_padrao(monkeypatch):
 - [ ] **Passo 4: Rodar o teste e ver falhar**
 
 ```bash
-cd tcc-jobs
-uv sync
-uv run pytest tests/test_config.py -v
+# você edita os arquivos no host; os comandos rodam no container
+docker compose exec jobs uv sync --all-groups
+docker compose exec jobs uv run pytest tests/test_config.py -v
 ```
 
 Esperado: FAIL com `ModuleNotFoundError: No module named 'tcc_jobs.core'`.
@@ -361,8 +454,8 @@ settings = Settings()  # type: ignore[call-arg]
 - [ ] **Passo 6: Rodar o teste e ver passar**
 
 ```bash
-cp .env.example .env
-uv run pytest tests/test_config.py -v
+# sem .env aqui: DATABASE_URL e TEST_DATABASE_URL vêm do compose
+docker compose exec jobs uv run pytest tests/test_config.py -v
 ```
 
 Esperado: 2 passed.
@@ -370,7 +463,8 @@ Esperado: 2 passed.
 - [ ] **Passo 7: Verificar o lint**
 
 ```bash
-uv run ruff check . && uv run ruff format --check .
+docker compose exec jobs uv run ruff check .
+docker compose exec jobs uv run ruff format --check .
 ```
 
 Esperado: sem erros. Se o format reclamar, rode `uv run ruff format .`.
@@ -429,7 +523,7 @@ def test_sessionmaker_produz_sessao_utilizavel():
 - [ ] **Passo 2: Rodar e ver falhar**
 
 ```bash
-uv run pytest tests/test_session.py -v
+docker compose exec jobs uv run pytest tests/test_session.py -v
 ```
 
 Esperado: FAIL com `ModuleNotFoundError: No module named 'tcc_jobs.db'`.
@@ -463,13 +557,13 @@ def criar_sessionmaker(engine: Engine) -> sessionmaker[Session]:
 
 - [ ] **Passo 4: Rodar e ver passar**
 
-O PostgreSQL da Tarefa 1 precisa estar de pé.
+O PostgreSQL e o container `jobs` da Tarefa 1 precisam estar de pé.
 
 ```bash
-uv run pytest tests/test_session.py -v
+docker compose exec jobs uv run pytest tests/test_session.py -v
 ```
 
-Esperado: 3 passed. Se der `connection refused`, suba o banco: `cd ../tcc-infra && docker compose up -d`.
+Esperado: 3 passed. O host `postgres` resolve dentro da rede do compose - se der `could not translate host name`, o serviço não subiu: `docker compose up -d`.
 
 - [ ] **Passo 5: Commit**
 
@@ -575,7 +669,7 @@ def test_fornecedor_usa_cnpj_como_chave(sessao):
 - [ ] **Passo 3: Rodar e ver falhar**
 
 ```bash
-uv run pytest tests/test_models_dimensoes.py -v
+docker compose exec jobs uv run pytest tests/test_models_dimensoes.py -v
 ```
 
 Esperado: FAIL com `ModuleNotFoundError: No module named 'tcc_jobs.db.models'`.
@@ -632,7 +726,7 @@ __all__ = ["Fornecedor", "Orgao", "UnidadeGestora"]
 - [ ] **Passo 5: Rodar e ver passar**
 
 ```bash
-uv run pytest tests/test_models_dimensoes.py -v
+docker compose exec jobs uv run pytest tests/test_models_dimensoes.py -v
 ```
 
 Esperado: 4 passed.
@@ -766,7 +860,7 @@ def test_item_e_participante_referenciam_licitacao(base_minima):
 - [ ] **Passo 2: Rodar e ver falhar**
 
 ```bash
-uv run pytest tests/test_models_fatos.py -v
+docker compose exec jobs uv run pytest tests/test_models_fatos.py -v
 ```
 
 Esperado: FAIL com `ImportError: cannot import name 'Licitacao'`.
@@ -885,7 +979,7 @@ __all__ = [
 - [ ] **Passo 4: Rodar e ver passar**
 
 ```bash
-uv run pytest tests/test_models_fatos.py -v
+docker compose exec jobs uv run pytest tests/test_models_fatos.py -v
 ```
 
 Esperado: 4 passed.
@@ -993,7 +1087,7 @@ def test_previsao_referencia_execucao_e_guarda_intervalo(sessao):
 - [ ] **Passo 2: Rodar e ver falhar**
 
 ```bash
-uv run pytest tests/test_models_analitico.py -v
+docker compose exec jobs uv run pytest tests/test_models_analitico.py -v
 ```
 
 Esperado: FAIL com `ImportError: cannot import name 'IngestaoLog'`.
@@ -1147,7 +1241,7 @@ __all__ = [
 - [ ] **Passo 5: Rodar e ver passar**
 
 ```bash
-uv run pytest tests/test_models_analitico.py -v
+docker compose exec jobs uv run pytest tests/test_models_analitico.py -v
 ```
 
 Esperado: 3 passed.
@@ -1155,7 +1249,7 @@ Esperado: 3 passed.
 - [ ] **Passo 6: Rodar a suíte inteira**
 
 ```bash
-uv run pytest -v
+docker compose exec jobs uv run pytest -v
 ```
 
 Esperado: 16 passed.
@@ -1184,9 +1278,8 @@ git commit -m "feat: modelos de log de ingestão e resultados de modelos"
 - [ ] **Passo 1: Inicializar o Alembic**
 
 ```bash
-cd tcc-jobs
-uv add --dev alembic
-uv run alembic init -t generic src/tcc_jobs/db/migrations
+docker compose exec jobs uv add --dev alembic
+docker compose exec jobs uv run alembic init -t generic src/tcc_jobs/db/migrations
 ```
 
 Isso cria `alembic.ini` na raiz e o diretório de migrations.
@@ -1227,10 +1320,10 @@ target_metadata = Base.metadata
 
 - [ ] **Passo 3: Gerar a migration**
 
-Com o PostgreSQL de pé:
+Com o compose de pé:
 
 ```bash
-uv run alembic revision --autogenerate -m "esquema inicial"
+docker compose exec jobs uv run alembic revision --autogenerate -m "esquema inicial"
 ```
 
 - [ ] **Passo 4: Conferir a migration gerada**
@@ -1325,7 +1418,7 @@ def test_downgrade_remove_tudo(banco_limpo):
 - [ ] **Passo 6: Rodar o teste**
 
 ```bash
-uv run pytest tests/test_migrations.py -v
+docker compose exec jobs uv run pytest tests/test_migrations.py -v
 ```
 
 Esperado: 4 passed. Se `test_downgrade_remove_tudo` falhar, a migration gerada tem `downgrade()` incompleto - complete manualmente com os `op.drop_table()` na ordem inversa.
@@ -1333,8 +1426,8 @@ Esperado: 4 passed. Se `test_downgrade_remove_tudo` falhar, a migration gerada t
 - [ ] **Passo 7: Aplicar no banco de desenvolvimento**
 
 ```bash
-uv run alembic upgrade head
-cd ../tcc-infra && docker compose exec postgres psql -U tcc -d tcc -c "\dt"
+docker compose exec jobs uv run alembic upgrade head
+docker compose exec postgres psql -U tcc -d tcc -c "\dt"
 ```
 
 Esperado: 12 tabelas listadas (11 do domínio mais `alembic_version`).
@@ -1342,7 +1435,7 @@ Esperado: 12 tabelas listadas (11 do domínio mais `alembic_version`).
 - [ ] **Passo 8: Commit**
 
 ```bash
-cd ../tcc-jobs
+cd ~/dev/TCC/tcc-jobs
 git add alembic.ini src/tcc_jobs/db/migrations tests/test_migrations.py pyproject.toml uv.lock
 git commit -m "feat: migration inicial com esquema completo"
 git push origin main
@@ -1405,7 +1498,7 @@ def test_ingest_rejeita_intervalo_invertido():
 - [ ] **Passo 2: Rodar e ver falhar**
 
 ```bash
-uv run pytest tests/test_cli.py -v
+docker compose exec jobs uv run pytest tests/test_cli.py -v
 ```
 
 Esperado: FAIL com `ModuleNotFoundError: No module named 'tcc_jobs.cli'`.
@@ -1490,7 +1583,7 @@ if __name__ == "__main__":
 - [ ] **Passo 4: Rodar e ver passar**
 
 ```bash
-uv run pytest tests/test_cli.py -v
+docker compose exec jobs uv run pytest tests/test_cli.py -v
 ```
 
 Esperado: 12 passed.
@@ -1498,8 +1591,8 @@ Esperado: 12 passed.
 - [ ] **Passo 5: Verificar o comando instalado**
 
 ```bash
-uv run tcc --help
-uv run tcc ingest --de 201301 --ate 202404
+docker compose exec jobs uv run tcc --help
+docker compose exec jobs uv run tcc ingest --de 201301 --ate 202404
 ```
 
 Esperado: ajuda com os cinco comandos, e a mensagem `ingest 201301..202404 - ainda não implementado`.
@@ -1518,51 +1611,122 @@ git push origin main
 
 **Arquivos:**
 - Criar: estrutura Laravel em `tcc-api/`
-- Modificar: `tcc-api/.env.example`
+- Criar: `tcc-api/Dockerfile`
+- Modificar: `tcc-infra/docker-compose.yml`
 - Criar: `tcc-api/routes/api.php`
 - Teste: `tcc-api/tests/Feature/HealthTest.php`
 
 **Interfaces:**
 - Produz: `GET /api/health` devolvendo `{"status":"ok","database":"ok"}` com HTTP 200.
 
-- [ ] **Passo 1: Criar o projeto Laravel**
+- [ ] **Passo 1: Criar o projeto pelo container**
 
-O diretório já tem `.git`, `README.md` e `.gitignore`, então o Laravel precisa ser criado em pasta temporária e movido:
+Nada de PHP no host. O `composer create-project` exige diretório vazio, e o repositório já tem `README.md` e `.gitignore` - por isso o projeto nasce numa subpasta e é mesclado:
 
 ```bash
-cd /home/gabriel/dev/TCC
-composer create-project laravel/laravel /tmp/laravel-tmp --no-interaction
-cp -rn /tmp/laravel-tmp/. tcc-api/
-rm -rf /tmp/laravel-tmp
-cd tcc-api && composer install
+cd ~/dev/TCC/tcc-api
+docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp \
+  -v "$PWD":/app -w /app composer:2 \
+  create-project laravel/laravel .laravel-tmp --no-interaction
+cp -rn .laravel-tmp/. . && rm -rf .laravel-tmp
 ```
 
-> `cp -rn` não sobrescreve arquivos existentes, preservando o `README.md` e o `.gitignore` que já estão no repositório.
+`-u "$(id -u):$(id -g)"` faz os arquivos nascerem com o seu usuário. Sem isso, viriam como root e você não conseguiria editá-los.
 
-- [ ] **Passo 2: Configurar o banco**
+- [ ] **Passo 2: Dockerfile multi-stage**
 
-Em `tcc-api/.env`, ajustar:
+Arquivo `tcc-api/Dockerfile`:
+
+```dockerfile
+FROM php:8.3-cli-alpine AS base
+
+RUN apk add --no-cache postgresql-dev \
+    && docker-php-ext-install pdo pdo_pgsql
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+WORKDIR /app
+
+# --- desenvolvimento: código por bind mount ---
+FROM base AS dev
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+
+# --- produção: código embutido, sem dependências de desenvolvimento ---
+FROM base AS prod
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+COPY . .
+RUN composer dump-autoload --optimize
+EXPOSE 8000
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+```
+
+A extensão `pdo_pgsql` é obrigatória. Sem ela o Laravel falha com `could not find driver`, mensagem que não indica a causa.
+
+- [ ] **Passo 3: Adicionar o serviço ao compose**
+
+Em `tcc-infra/docker-compose.yml`, acrescentar dentro de `services:`:
+
+```yaml
+  api:
+    build:
+      context: ../tcc-api
+      target: dev
+    container_name: tcc-api
+    volumes:
+      - ../tcc-api:/app
+      - api-vendor:/app/vendor
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      APP_ENV: local
+      APP_DEBUG: "true"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+```
+
+E em `volumes:`, acrescentar `api-vendor:`.
+
+O `vendor/` é volume nomeado, não bind mount: as dependências pertencem ao container. Sem isso, o `vendor` do host (que não existe) sobrescreveria o do container, e nada funcionaria.
+
+- [ ] **Passo 4: Subir e instalar as dependências**
+
+```bash
+docker compose up -d --build api
+docker compose exec api composer install
+docker compose exec api php artisan key:generate
+```
+
+- [ ] **Passo 5: Configurar o `.env.example`**
+
+Em `tcc-api/.env.example`, ajustar as chaves de banco (sem valores reais):
 
 ```bash
 DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
+DB_HOST=postgres
 DB_PORT=5432
 DB_DATABASE=tcc
 DB_USERNAME=tcc
-DB_PASSWORD=troque-esta-senha
+DB_PASSWORD=
 ```
 
-Replicar as mesmas chaves em `.env.example`, sem a senha real.
+O host é `postgres`, nome do serviço na rede do compose - não `127.0.0.1`.
 
-- [ ] **Passo 3: Desabilitar as migrations do Laravel**
+- [ ] **Passo 6: Desabilitar as migrations do Laravel**
 
 O Alembic é o dono do esquema. Remover as migrations padrão para que ninguém as rode por engano:
 
 ```bash
-rm -f database/migrations/*.php
+rm -f ~/dev/TCC/tcc-api/database/migrations/*.php
 ```
 
-Criar `database/migrations/README.md` com o conteúdo:
+Criar `tcc-api/database/migrations/README.md`:
 
 ```markdown
 # Sem migrations aqui
@@ -1573,7 +1737,7 @@ versionando o mesmo banco entram em conflito, cada uma com sua tabela de
 controle.
 ```
 
-- [ ] **Passo 4: Escrever o teste que falha**
+- [ ] **Passo 7: Escrever o teste que falha**
 
 Arquivo `tcc-api/tests/Feature/HealthTest.php`:
 
@@ -1604,15 +1768,15 @@ class HealthTest extends TestCase
 }
 ```
 
-- [ ] **Passo 5: Rodar e ver falhar**
+- [ ] **Passo 8: Rodar e ver falhar**
 
 ```bash
-./vendor/bin/phpunit tests/Feature/HealthTest.php
+docker compose exec api ./vendor/bin/phpunit tests/Feature/HealthTest.php
 ```
 
 Esperado: FAIL com 404 - a rota não existe.
 
-- [ ] **Passo 6: Implementar a rota**
+- [ ] **Passo 9: Implementar a rota**
 
 Criar `tcc-api/routes/api.php`:
 
@@ -1637,7 +1801,7 @@ Route::get('/health', function () {
 });
 ```
 
-Registrar o arquivo de rotas em `bootstrap/app.php`, no `withRouting`:
+Registrar o arquivo em `bootstrap/app.php`, no `withRouting`:
 
 ```php
     ->withRouting(
@@ -1648,32 +1812,35 @@ Registrar o arquivo de rotas em `bootstrap/app.php`, no `withRouting`:
     )
 ```
 
-- [ ] **Passo 7: Rodar e ver passar**
-
-Com o PostgreSQL de pé:
+- [ ] **Passo 10: Rodar e ver passar**
 
 ```bash
-./vendor/bin/phpunit tests/Feature/HealthTest.php
+docker compose restart api
+docker compose exec api ./vendor/bin/phpunit tests/Feature/HealthTest.php
 ```
 
-Esperado: 2 passed. Se aparecer `could not find driver`, falta `php8.3-pgsql` (Tarefa 0).
+Esperado: 2 passed.
 
-- [ ] **Passo 8: Verificar manualmente**
+- [ ] **Passo 11: Verificar do host**
 
 ```bash
-php artisan serve &
-curl -s http://127.0.0.1:8000/api/health
-kill %1
+curl -s http://localhost:8000/api/health
 ```
 
 Esperado: `{"status":"ok","database":"ok"}`.
 
-- [ ] **Passo 9: Commit**
+- [ ] **Passo 12: Commit**
 
 ```bash
-./vendor/bin/pint
+docker compose exec api ./vendor/bin/pint
+cd ~/dev/TCC/tcc-api
 git add -A
 git commit -m "feat: esqueleto laravel com endpoint de health"
+git push origin main
+
+cd ~/dev/TCC/tcc-infra
+git add docker-compose.yml
+git commit -m "feat: serviço api no compose"
 git push origin main
 ```
 
@@ -1683,35 +1850,95 @@ git push origin main
 
 **Arquivos:**
 - Criar: estrutura Angular em `tcc-frontend/`
+- Criar: `tcc-frontend/Dockerfile`
+- Modificar: `tcc-infra/docker-compose.yml`
 - Criar: `tcc-frontend/src/app/core/health.service.ts`
 - Teste: `tcc-frontend/src/app/core/health.service.spec.ts`
 
 **Interfaces:**
-- Produz: `HealthService.check(): Observable<{status: string, database: string}>`, consumindo `GET {apiUrl}/health`.
+- Produz: `HealthService.check(): Observable<HealthStatus>`, consumindo `GET {apiUrl}/health`.
 
-- [ ] **Passo 1: Criar o projeto Angular**
+- [ ] **Passo 1: Criar o projeto pelo container**
 
 ```bash
-cd /home/gabriel/dev/TCC
-npx -y @angular/cli@latest new tcc-frontend-tmp \
-  --style=scss --ssr=false --routing=true --skip-git --package-manager=npm
-cp -rn tcc-frontend-tmp/. tcc-frontend/
-rm -rf tcc-frontend-tmp
-cd tcc-frontend && npm install
+cd ~/dev/TCC/tcc-frontend
+docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp \
+  -v "$PWD":/app -w /app node:22-alpine \
+  npx -y @angular/cli@latest new tmp \
+    --style=scss --ssr=false --routing=true --skip-git --package-manager=npm
+cp -rn tmp/. . && rm -rf tmp
 ```
 
-- [ ] **Passo 2: Configurar a URL da API**
+- [ ] **Passo 2: Dockerfile multi-stage**
 
-Em `src/environments/environment.ts` (criar se não existir):
+Arquivo `tcc-frontend/Dockerfile`:
+
+```dockerfile
+# --- desenvolvimento: código por bind mount, ng serve com hot reload ---
+FROM node:22-alpine AS dev
+WORKDIR /app
+CMD ["npm", "start", "--", "--host", "0.0.0.0", "--poll", "1000"]
+
+# --- build de produção ---
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# --- produção: estático servido por nginx ---
+FROM nginx:alpine AS prod
+COPY --from=build /app/dist/tcc-frontend/browser /usr/share/nginx/html
+EXPOSE 80
+```
+
+`--poll 1000` é necessário: a notificação de mudança de arquivo do inotify não atravessa de forma confiável o limite entre WSL e container, e sem polling o hot reload não dispara.
+
+O caminho `dist/tcc-frontend/browser` varia conforme a versão do Angular CLI. Confirme com `docker compose exec frontend ls dist/` depois do primeiro build e ajuste se necessário.
+
+- [ ] **Passo 3: Adicionar o serviço ao compose**
+
+Em `tcc-infra/docker-compose.yml`, dentro de `services:`:
+
+```yaml
+  frontend:
+    build:
+      context: ../tcc-frontend
+      target: dev
+    container_name: tcc-frontend
+    volumes:
+      - ../tcc-frontend:/app
+      - frontend-modules:/app/node_modules
+    ports:
+      - "4200:4200"
+    depends_on:
+      - api
+```
+
+E em `volumes:`, acrescentar `frontend-modules:`.
+
+- [ ] **Passo 4: Subir e instalar**
+
+```bash
+docker compose up -d --build frontend
+docker compose exec frontend npm install
+```
+
+- [ ] **Passo 5: Configurar a URL da API**
+
+Criar `src/environments/environment.ts`:
 
 ```typescript
 export const environment = {
   production: false,
-  apiUrl: 'http://127.0.0.1:8000/api',
+  apiUrl: 'http://localhost:8000/api',
 };
 ```
 
-- [ ] **Passo 3: Escrever o teste que falha**
+Aqui o host é `localhost`, não `api`: quem faz a requisição é o navegador na sua máquina, não o container do frontend.
+
+- [ ] **Passo 6: Escrever o teste que falha**
 
 Arquivo `src/app/core/health.service.spec.ts`:
 
@@ -1751,15 +1978,17 @@ describe('HealthService', () => {
 });
 ```
 
-- [ ] **Passo 4: Rodar e ver falhar**
+- [ ] **Passo 7: Rodar e ver falhar**
 
 ```bash
-npm test -- --watch=false --browsers=ChromeHeadless
+docker compose exec frontend npm test -- --watch=false --browsers=ChromeHeadless
 ```
 
 Esperado: erro de compilação - `health.service` não existe.
 
-- [ ] **Passo 5: Implementar**
+> Se falhar por falta de Chrome no container, acrescente ao estágio `dev` do Dockerfile: `RUN apk add --no-cache chromium` e `ENV CHROME_BIN=/usr/bin/chromium-browser`, depois `docker compose up -d --build frontend`.
+
+- [ ] **Passo 8: Implementar**
 
 Arquivo `src/app/core/health.service.ts`:
 
@@ -1795,196 +2024,146 @@ export const appConfig: ApplicationConfig = {
 };
 ```
 
-- [ ] **Passo 6: Rodar e ver passar**
+- [ ] **Passo 9: Rodar e ver passar**
 
 ```bash
-npm test -- --watch=false --browsers=ChromeHeadless
+docker compose exec frontend npm test -- --watch=false --browsers=ChromeHeadless
 ```
 
-Esperado: 1 spec, 0 failures (mais o spec padrão do AppComponent).
+Esperado: specs passando, incluindo o do HealthService.
 
-- [ ] **Passo 7: Verificar o build**
+- [ ] **Passo 10: Verificar o dashboard no navegador**
 
 ```bash
-npm run build
+curl -s -o /dev/null -w "frontend HTTP:%{http_code}\n" http://localhost:4200
 ```
 
-Esperado: build sem erros.
+Esperado: HTTP 200. Abra `http://localhost:4200` e confirme que a página do Angular carrega.
 
-- [ ] **Passo 8: Commit**
+- [ ] **Passo 11: Commit**
 
 ```bash
+cd ~/dev/TCC/tcc-frontend
 git add -A
 git commit -m "feat: esqueleto angular com serviço de health"
+git push origin main
+
+cd ~/dev/TCC/tcc-infra
+git add docker-compose.yml
+git commit -m "feat: serviço frontend no compose"
 git push origin main
 ```
 
 ---
 
-## Tarefa 11: Compose completo e verificação fim a fim
+## Tarefa 11: Atalhos e verificação fim a fim
 
 **Arquivos:**
-- Modificar: `tcc-infra/docker-compose.yml`
-- Criar: `tcc-api/Dockerfile`
-- Criar: `tcc-frontend/Dockerfile`
-- Criar: `tcc-jobs/Dockerfile`
+- Criar: `tcc-infra/Makefile`
 
 **Interfaces:**
-- Produz: `docker compose up -d` no `tcc-infra` sobe postgres, api e frontend, com a API respondendo em `localhost:8000/api/health`.
+- Produz: `make dev`, `make test`, `make shell-jobs` e demais atalhos, operando sobre os cinco repositórios.
 
-- [ ] **Passo 1: Dockerfile da API**
+- [ ] **Passo 1: Criar o Makefile**
 
-Arquivo `tcc-api/Dockerfile`:
+Arquivo `tcc-infra/Makefile`:
 
-```dockerfile
-FROM php:8.3-cli-alpine
+```makefile
+.DEFAULT_GOAL := help
+.PHONY: help up down logs ps rebuild test test-jobs test-api test-front lint shell-jobs shell-api migrate
 
-RUN apk add --no-cache postgresql-dev libpq \
-    && docker-php-ext-install pdo pdo_pgsql
+help:  ## lista os alvos disponíveis
+	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+up:  ## sobe todos os serviços
+	docker compose up -d --build
 
-WORKDIR /app
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+down:  ## derruba os serviços, preservando o banco
+	docker compose down
 
-COPY . .
-RUN composer dump-autoload --optimize
+logs:  ## acompanha os logs de todos os serviços
+	docker compose logs -f
 
-EXPOSE 8000
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+ps:  ## estado dos serviços
+	docker compose ps
+
+test: test-jobs test-api test-front  ## suíte dos três repositórios
+
+test-jobs:  ## pytest no container de jobs
+	docker compose exec jobs uv run pytest -v
+
+test-api:  ## phpunit no container da api
+	docker compose exec api ./vendor/bin/phpunit
+
+test-front:  ## specs do dashboard
+	docker compose exec frontend npm test -- --watch=false --browsers=ChromeHeadless
+
+lint:  ## lint das três stacks
+	docker compose exec jobs uv run ruff check .
+	docker compose exec api ./vendor/bin/pint --test
+	docker compose exec frontend npm run lint
+
+migrate:  ## aplica as migrations
+	docker compose exec jobs uv run alembic upgrade head
+
+shell-jobs:  ## shell no container de jobs
+	docker compose exec jobs bash
+
+shell-api:  ## shell no container da api
+	docker compose exec api sh
 ```
 
-- [ ] **Passo 2: Dockerfile do frontend**
+Os alvos resolvem o atrito real do polyrepo: um comando atravessando os cinco repositórios, sem `cd` manual.
 
-Arquivo `tcc-frontend/Dockerfile`:
-
-```dockerfile
-FROM node:22-alpine AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM nginx:alpine
-COPY --from=build /app/dist/tcc-frontend/browser /usr/share/nginx/html
-EXPOSE 80
-```
-
-> O caminho do `dist` varia conforme a versão do Angular CLI. Confirme com `ls dist/` após o build local e ajuste se necessário.
-
-- [ ] **Passo 3: Dockerfile dos jobs**
-
-Arquivo `tcc-jobs/Dockerfile`:
-
-```dockerfile
-FROM python:3.12-slim
-
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-
-WORKDIR /app
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev
-
-COPY . .
-ENTRYPOINT ["uv", "run", "tcc"]
-CMD ["--help"]
-```
-
-> Esta imagem não sobe como serviço. Existe para executar os jobs de forma reprodutível, e é a maior das três porque carrega as bibliotecas de dados.
-
-- [ ] **Passo 4: Ampliar o compose**
-
-Substituir `tcc-infra/docker-compose.yml`:
-
-```yaml
-services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: tcc-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "${POSTGRES_PORT}:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./scripts/init-test-db.sh:/docker-entrypoint-initdb.d/init-test-db.sh:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  api:
-    build: ../tcc-api
-    container_name: tcc-api
-    restart: unless-stopped
-    environment:
-      DB_CONNECTION: pgsql
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_DATABASE: ${POSTGRES_DB}
-      DB_USERNAME: ${POSTGRES_USER}
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      APP_ENV: local
-      APP_DEBUG: "true"
-    ports:
-      - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  frontend:
-    build: ../tcc-frontend
-    container_name: tcc-frontend
-    restart: unless-stopped
-    ports:
-      - "4200:80"
-    depends_on:
-      - api
-
-volumes:
-  pgdata:
-```
-
-- [ ] **Passo 5: Subir tudo**
+- [ ] **Passo 2: Verificar os atalhos**
 
 ```bash
-cd tcc-infra
-docker compose up -d --build
-docker compose ps
+cd ~/dev/TCC/tcc-infra
+make help
+make ps
 ```
 
-Esperado: três contêineres em execução, `postgres` com `healthy`.
+Esperado: lista de alvos com descrição, e três serviços em execução.
 
-- [ ] **Passo 6: Verificar a cadeia completa**
+- [ ] **Passo 3: Verificação fim a fim**
 
 ```bash
+make up
+sleep 15
 curl -s http://localhost:8000/api/health
-curl -s -o /dev/null -w "frontend HTTP:%{http_code}\n" http://localhost:4200
-```
-
-Esperado: `{"status":"ok","database":"ok"}` e `frontend HTTP:200`.
-
-- [ ] **Passo 7: Confirmar que o esquema está aplicado**
-
-```bash
+curl -s -o /dev/null -w "\nfrontend HTTP:%{http_code}\n" http://localhost:4200
 docker compose exec postgres psql -U tcc -d tcc -c "\dt" | grep -c licitacao
 ```
 
-Esperado: 3 (`licitacao`, `item_licitacao`, `participante_licitacao`).
+Esperado: `{"status":"ok","database":"ok"}`, `frontend HTTP:200`, e `3` (as tabelas `licitacao`, `item_licitacao` e `participante_licitacao`).
 
-- [ ] **Passo 8: Commit nos três repositórios**
+- [ ] **Passo 4: Verificar a suíte completa**
 
 ```bash
-cd ../tcc-api && git add Dockerfile && git commit -m "feat: dockerfile da api" && git push origin main
-cd ../tcc-frontend && git add Dockerfile && git commit -m "feat: dockerfile do dashboard" && git push origin main
-cd ../tcc-jobs && git add Dockerfile && git commit -m "feat: dockerfile dos jobs" && git push origin main
-cd ../tcc-infra && git add docker-compose.yml && git commit -m "feat: compose com api e frontend" && git push origin main
+make test
+```
+
+Esperado: 32 testes no `jobs`, 2 no `api`, specs do `frontend` - todos passando.
+
+- [ ] **Passo 5: Verificar que o build de produção também funciona**
+
+Os estágios `prod` não são exercitados pelo compose de desenvolvimento. Confirme que compilam:
+
+```bash
+docker build --target prod -t tcc-jobs:prod ~/dev/TCC/tcc-jobs
+docker build --target prod -t tcc-api:prod ~/dev/TCC/tcc-api
+docker build --target prod -t tcc-frontend:prod ~/dev/TCC/tcc-frontend
+```
+
+Esperado: três builds bem-sucedidos. Um estágio `prod` que nunca foi construído é um estágio quebrado esperando a véspera da entrega.
+
+- [ ] **Passo 6: Commit**
+
+```bash
+cd ~/dev/TCC/tcc-infra
+git add Makefile
+git commit -m "feat: makefile com atalhos para os cinco repositórios"
+git push origin main
 ```
 
 ---
@@ -2159,17 +2338,18 @@ Esperado: `completed success` nos três. Se algum falhar, o log sai em `gh run v
 
 ## Critério de conclusão
 
-O plano está completo quando todos os itens abaixo forem verdadeiros, verificados por comando:
+Verificado por comando, não por impressão:
 
-- [ ] `docker compose up -d` no `tcc-infra` sobe três contêineres saudáveis
+- [ ] `make up` sobe três serviços; `make ps` mostra `postgres` com `healthy`
 - [ ] `curl localhost:8000/api/health` devolve `{"status":"ok","database":"ok"}`
 - [ ] `curl localhost:4200` devolve HTTP 200
-- [ ] `uv run pytest` no `tcc-jobs` passa com 32 testes
-- [ ] `./vendor/bin/phpunit` no `tcc-api` passa
-- [ ] `npm test` no `tcc-frontend` passa
-- [ ] `uv run alembic downgrade base && uv run alembic upgrade head` funciona nos dois sentidos
+- [ ] `make test` passa: 32 testes no `jobs`, 2 no `api`, specs do `frontend`
+- [ ] `make lint` sem erro nas três stacks
+- [ ] `docker compose exec jobs uv run alembic downgrade base` e `upgrade head` funcionam nos dois sentidos
+- [ ] Os três estágios `prod` compilam (`docker build --target prod`)
 - [ ] CI verde nos três repositórios
-- [ ] Nenhum `.ai-context.md` ou `.env` versionado: `git ls-files | grep -E 'AI_CONTEXT|\.env$'` vazio nos quatro repos
+- [ ] Nada indevido versionado: `git ls-files | grep -E 'AI_CONTEXT|\.env$|vendor/|node_modules/'` vazio nos cinco repositórios
+- [ ] O host tem apenas Docker instalado - nenhum PHP, Composer ou dependência de projeto fora dos containers
 
 ## Próximo plano
 
