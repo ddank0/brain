@@ -55,7 +55,9 @@ O que testar muda conforme a camada, e em ML a aplicação ingênua não funcion
 
 Um workflow por repositório, disparado em push na `main` e em pull request.
 
-**`tcc-jobs`** - Postgres como serviço, banco de teste criado em passo explícito (o script de init do compose não roda no runner), `ruff check`, `ruff format --check`, Pyright strict, migrations aplicadas, `alembic check`, pytest com cobertura.
+**`tcc-jobs`** - Postgres como serviço, banco de teste criado em passo explícito (o script de init do compose não roda no runner), `ruff check`, `ruff format --check`, Pyright strict, **`lint-imports`** (contratos de arquitetura), migrations aplicadas, `alembic check`, pytest com cobertura.
+
+O `lint-imports` verifica que o núcleo funcional não importa infraestrutura, tornando o RNF01 verificável por ferramenta em vez de por inspeção - ver [[Licitações - Arquitetura dos Jobs]].
 
 **`tcc-api`** - Postgres como serviço, `Pint --test`, PHPStan nível 10, PHPUnit.
 
@@ -77,6 +79,7 @@ Todos a partir de `tcc-infra`, atravessando os cinco repositórios:
 make check       # o que o CI roda: lint, análise estática e testes
 make test        # apenas os testes das três stacks
 make lint        # apenas lint e análise estática
+make arch        # o núcleo importa infraestrutura?
 make drift       # modelos divergiram das migrations?
 make build-prod  # os estágios de produção compilam?
 make verify      # verificação fim a fim da cadeia

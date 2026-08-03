@@ -78,6 +78,8 @@ Três abstrações degradariam o desempenho sem oferecer portabilidade real:
 
 **Regra geral:** desacoplar nas fronteiras de dado (banco, arquivo, HTTP); não desacoplar dentro do caminho quente de processamento.
 
+A organização interna dos jobs que materializa essa regra é **Functional Core, Imperative Shell**, com contratos verificados por `import-linter` - ver [[Licitações - Arquitetura dos Jobs]].
+
 ---
 
 ## Stack

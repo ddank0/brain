@@ -33,7 +33,7 @@ O campo `Requisito` do [board do projeto](https://github.com/users/ddank0/projec
 
 | # | Enunciado (PDF) | Critério de aceitação | Plano | Status |
 |---|---|---|---|---|
-| **RNF01** | Arquitetura modular | As seis regras de dependência valem e são verificáveis: `tcc-api` não importa `tcc-jobs`, o frontend não conhece o banco, `etl/` e `ml/` só são acionados por CLI. A separação em repositórios torna a violação impossível por construção | 01 | **atendido** |
+| **RNF01** | Arquitetura modular | As seis regras de dependência valem e são verificáveis: `tcc-api` não importa `tcc-jobs`, o frontend não conhece o banco, `etl/` e `ml/` só são acionados por CLI. A separação em repositórios torna a violação impossível por construção. **Dentro dos jobs, `import-linter` no CI garante que o núcleo funcional não importa infraestrutura** | 01 | **atendido** - verificável por ferramenta |
 | **RNF02** | Código de fácil manutenção | `ruff`, `Pint` e `ESLint` sem erro **mais análise estática no nível máximo**: Pyright strict, PHPStan nível 10, ESLint strictTypeChecked. CI verde nos três repositórios. Cobertura de ao menos 80% em `etl/` e `ml/` | 01, 07 | **parcial** - ferramentas ativas e CI verde; cobertura das camadas de dados depende dos Planos 02-05 |
 | **RNF03** | API documentada automaticamente | `/docs` renderiza a especificação. `openapi.json` versionado. O cliente TypeScript do Angular é **gerado** desse arquivo, não escrito à mão | 03 | pendente |
 | **RNF04** | Banco versionado por migrations | `alembic upgrade head` e `alembic downgrade base` funcionam nos dois sentidos, com teste automatizado. Nenhuma migration do Laravel existe. `alembic check` no CI detecta modelo alterado sem migration | 01 | **atendido** |
@@ -70,6 +70,7 @@ Três enunciados do PDF não eram verificáveis como escritos. O que foi decidid
 | [[Licitações - Modelos Preditivos e Anomalias]] | RF06, RF07, RNF08 |
 | [[Licitações - Plano 01 - Fundação]] | RNF01, RNF04, RNF05 |
 | [[Licitações - Qualidade e Integração Contínua]] | RNF02 |
+| [[Licitações - Arquitetura dos Jobs]] | RNF01, RNF08 |
 | [[TCC - Sistema Inteligente para Licitações]] | RF09, escopo do dashboard |
 
 ## Convenção de status
