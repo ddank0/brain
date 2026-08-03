@@ -16,9 +16,11 @@ Isso elimina a classe de erro mais comum em desenvolvimento poliglota - versão 
 
 | No host | Nos containers |
 |---|---|
-| Docker | PHP 8.4, Composer |
-| Node (opcional) | Python 3.12, uv |
-| Python (opcional) | Node 22, npm |
+| Docker | PHP 8.4.24, Composer |
+| Node (opcional) | Python 3.14.6, uv |
+| Python (opcional) | Node 24.18.1, npm |
+
+**Critério de versão:** a mais recente que as dependências críticas suportam, verificado antes de subir. Python não tem LTS formal, então vale a mais recente estável (3.14, suporte até 2030). Node tem, e a escolha é a **LTS ativa** - Node 26 já existe, mas só entra em LTS em out/2026, e o Angular 22 declara `engines: ^22.22.3 || ^24.15.0 || >=26.0.0`.
 
 ### Como funciona
 
@@ -108,7 +110,7 @@ PHP é interpretado, então não precisa de nada equivalente.
 
 **Sintoma:** `libatomic.so.1: cannot open shared object file`.
 
-**Causa:** o Pyright baixa o próprio Node, que não roda em `python:3.12-slim` sem essa biblioteca.
+**Causa:** o Pyright baixa o próprio Node, que não roda na imagem `python:*-slim` sem essa biblioteca.
 
 **Solução:** `apt-get install libatomic1` no estágio `dev`.
 
@@ -131,9 +133,25 @@ RUN apk add --no-cache --virtual .build-deps postgresql-dev \
 
 Resultado: de 1.04 GB para 230 MB.
 
+### Volume nomeado herda o owner do ponto de montagem
+
+**Sintoma:** após recriar um volume, `npm install` falha com `EACCES` mesmo com o container rodando como usuário não-root.
+
+**Causa:** ao criar um volume nomeado, o Docker copia o ownership do diretório correspondente **na imagem**. Se `/app/node_modules` não existe na imagem, o volume nasce como root.
+
+**Solução:** criar o diretório na imagem, com o owner correto, antes do `USER`:
+
+```dockerfile
+RUN mkdir -p /app/node_modules && chown -R "$UID:$GID" /app
+```
+
+### CI falha por rede, não por código
+
+`docker build` no runner depende do Docker Hub e ocasionalmente falha com `i/o timeout` em `registry-1.docker.io`. Não é bug do projeto: reexecutar resolve (`gh run rerun <id> --failed`). Vale conferir a mensagem antes de sair caçando causa no código.
+
 ### Ferramentas mudam sob os pés
 
-Duas surpresas em ferramentas recentes:
+Três surpresas em ferramentas recentes:
 
 - **O Angular trocou Karma por Vitest.** A flag `--browsers` não existe mais; `npm test -- --watch=false` é o comando.
 - **ESLint não vem por padrão** no Angular CLI atual. Precisa de `ng add @angular-eslint/schematics`.

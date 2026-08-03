@@ -99,7 +99,8 @@ Três abstrações degradariam o desempenho sem oferecer portabilidade real:
 | Testes | **pytest**, **PHPUnit**, **Vitest** | Padrões de cada ecossistema |
 | Análise estática | **Pyright** strict, **PHPStan** nível 10 + Larastan, **ESLint** strictTypeChecked | Ver [[Licitações - Qualidade e Integração Contínua]] |
 | Banco (versão) | **PostgreSQL 16** | - |
-| Python (versão) | **3.12.13** | - |
+| Python (versão) | **3.14.6** | Mais recente estável; suporte até 2030 |
+| Node (versão) | **24.18.1** | LTS ativa; Angular 22 declara `^24.15.0` |
 
 ### Nota sobre o desempenho do Python
 
