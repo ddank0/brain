@@ -22,8 +22,8 @@ Arquitetura do [[TCC - Sistema Inteligente para Licitações]]. Três camadas, c
 | Camada | Linguagem | Justificativa |
 |---|---|---|
 | **Jobs** | Python | Única com ecossistema maduro de séries temporais e detecção de anomalias. Polars/DuckDB cobrem 29M linhas com desempenho nativo |
-| **API** | PHP 8.3 / Laravel | Só consulta tabelas e serializa JSON - sem impedimento técnico. Fluência do autor supera diferença de desempenho, irrelevante nesta carga |
-| **Dashboard** | Angular | Fluência do autor. Tipagem forte casa com cliente gerado do OpenAPI |
+| **API** | PHP 8.4 / Laravel 13 | Só consulta tabelas e serializa JSON - sem impedimento técnico. Fluência do autor supera diferença de desempenho, irrelevante nesta carga |
+| **Dashboard** | Angular 22 | Fluência do autor. Tipagem forte casa com cliente gerado do OpenAPI |
 
 ### Por que Python é obrigatório nos jobs
 
@@ -33,9 +33,12 @@ Não há em PHP equivalente maduro a SARIMAX com seleção automática de ordem,
 
 - Três toolchains: `uv`, `composer`, `npm`
 - Três Dockerfiles e três suítes de teste
-- **Definição do esquema duplicada** entre SQLAlchemy (jobs) e Eloquent (API) - mitigada pela propriedade única do Alembic
+- Três ferramentas de análise estática a manter
+- **Definição do esquema duplicada** entre SQLAlchemy (jobs) e Eloquent (API) - mitigada pela propriedade única do Alembic e por teste de contrato
 
 Aceito porque a fluência do autor nas camadas de interface reduz o tempo de desenvolvimento mais do que a duplicação o aumenta.
+
+O desenvolvimento é **container-first**: o host precisa apenas de Docker, e as três toolchains vivem nas imagens. Isso elimina divergência de versão entre máquina e container - ver [[Licitações - Ambiente de Desenvolvimento]].
 
 ---
 
@@ -90,10 +93,13 @@ Três abstrações degradariam o desempenho sem oferecer portabilidade real:
 | Carga em massa | **`COPY` via psycopg3** | Minutos em vez de horas para 21,8M linhas |
 | Séries temporais | **statsforecast** (+ statsmodels no diagnóstico) | AutoARIMA compilado com Numba |
 | Anomalias | **scikit-learn** | `IsolationForest` e `LocalOutlierFactor` nativos |
-| API | **PHP 8.3 / Laravel** | Fluência do autor |
-| Dashboard | **Angular + Material + ECharts** | Fluência do autor; cliente gerado do OpenAPI |
+| API | **PHP 8.4.24 / Laravel 13.23** | Fluência do autor |
+| Dashboard | **Angular 22.1 + TypeScript 6.0** (Material e ECharts no Plano 06) | Fluência do autor; cliente gerado do OpenAPI |
 | Contêineres | **Docker + Docker Compose** | RNF05 |
-| Testes | **pytest**, **PHPUnit**, **Jasmine/Karma** | Padrões de cada ecossistema |
+| Testes | **pytest**, **PHPUnit**, **Vitest** | Padrões de cada ecossistema |
+| Análise estática | **Pyright** strict, **PHPStan** nível 10 + Larastan, **ESLint** strictTypeChecked | Ver [[Licitações - Qualidade e Integração Contínua]] |
+| Banco (versão) | **PostgreSQL 16** | - |
+| Python (versão) | **3.12.13** | - |
 
 ### Nota sobre o desempenho do Python
 

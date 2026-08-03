@@ -5,7 +5,7 @@ tags: [tcc, licitacoes, dados, ia]
 created: "2026-08-02"
 status: active
 goal: "Coletar licitações públicas federais, prever tendências por séries temporais e sinalizar registros atípicos, expondo tudo via API e dashboard"
-stack: [python, polars, postgresql, php, laravel, angular, docker]
+stack: [python, polars, postgresql, php, laravel, angular, docker, pyright, phpstan]
 ---
 
 Trabalho de Conclusão de Curso. Sistema que coleta dados públicos de licitações federais, organiza em base estruturada, produz previsões por séries temporais e sinaliza registros estatisticamente atípicos.
@@ -24,6 +24,9 @@ O sistema é **analítico e preditivo**. Não substitui auditoria nem caracteriz
 | [[Licitações - Modelo de Dados]] | Dimensões, fatos, chave natural, índices |
 | [[Licitações - Pipeline de Dados]] | Medalhão, os cinco jobs, armadilhas do formato |
 | [[Licitações - Modelos Preditivos e Anomalias]] | SARIMA, Isolation Forest, avaliação sem rótulos |
+| [[Licitações - Qualidade e Integração Contínua]] | Análise estática, TDD por camada, pipelines |
+| [[Licitações - Ambiente de Desenvolvimento]] | Container-first e armadilhas de ambiente |
+| [[Licitações - Plano 01 - Fundação]] | Semanas 1-2, **concluído** |
 
 ---
 
@@ -50,16 +53,18 @@ O sistema é **analítico e preditivo**. Não substitui auditoria nem caracteriz
 
 ## Cronograma
 
-| Semanas | Entrega | Requisitos |
-|---|---|---|
-| 1-2 | Docker Compose, PostgreSQL, Alembic, esqueleto das três stacks | RNF01, RNF04, RNF05 |
-| 3-5 | ETL em Python: download, parse, `COPY`, medalhão; carga de 201301-202404 | RF01, RF02, RF03, RF10 |
-| 6 | API em Laravel: consulta e análise histórica; exportação do OpenAPI | RF04, RF05, RF08, RNF03 |
-| 7-9 | SARIMA, backtesting, baseline, seleção de parâmetros | RF06 |
-| 10-12 | Features, Isolation Forest, LOF, avaliação em três frentes | RF07 |
-| 13-15 | Dashboard Angular, cinco telas | RF09 |
-| 16 | Testes finais, README, redação | RNF02 |
-| **Bônus** | Conector PNCP, se houver tempo residual | - |
+| Semanas | Entrega | Requisitos | Status |
+|---|---|---|---|
+| 1-2 | Docker Compose, PostgreSQL, Alembic, esqueleto das três stacks | RNF01, RNF04, RNF05 | **concluído** |
+| 3-5 | ETL em Python: download, parse, `COPY`, medalhão; carga de 201301-202404 | RF01, RF02, RF03, RF10 | próximo |
+| 6 | API em Laravel: consulta e análise histórica; exportação do OpenAPI | RF04, RF05, RF08, RNF03 | - |
+| 7-9 | SARIMA, backtesting, baseline, seleção de parâmetros | RF06 | - |
+| 10-12 | Features, Isolation Forest, LOF, avaliação em três frentes | RF07 | - |
+| 13-15 | Dashboard Angular, cinco telas | RF09 | - |
+| 16 | Testes finais, README, redação | RNF02 | - |
+| **Bônus** | Conector PNCP, se houver tempo residual | - | - |
+
+Acompanhamento por cards em [github.com/users/ddank0/projects/2](https://github.com/users/ddank0/projects/2), com campos de semana, camada e requisito.
 
 A API recebe uma semana por ser a camada de maior fluência do autor e a de menor complexidade - leitura e serialização, sem lógica estatística.
 
@@ -137,8 +142,11 @@ Para atualização do documento de especificação do TCC:
 
 | Item | PDF original | Decisão atual |
 |---|---|---|
-| Backend da API | FastAPI (Python) | PHP 8.3 / Laravel |
-| Frontend | React + Vite + Tailwind | Angular + Material + ECharts |
+| Backend da API | FastAPI (Python) | PHP 8.4 / Laravel 13.23 |
+| Frontend | React + Vite + Tailwind | Angular 22.1 + Material + ECharts |
+| Repositório | Monolito implícito | **Polyrepo**: cinco repositórios independentes |
+| Desenvolvimento | Não especificado | **Container-first**: host só precisa de Docker |
+| Qualidade | RNF02 genérico | Análise estática no nível máximo das três stacks |
 | Processamento | Pandas | Polars, com pandas na fronteira do ML |
 | Séries temporais | Statsmodels | statsforecast, com statsmodels em diagnóstico |
 | Fontes de dados | Múltiplos portais, incl. estaduais e municipais | Federal, via Portal da Transparência; PNCP como bônus |

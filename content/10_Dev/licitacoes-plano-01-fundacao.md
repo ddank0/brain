@@ -4,15 +4,18 @@ type: note
 tags: [tcc, licitacoes, plano, docker, postgresql, alembic]
 created: "2026-08-02"
 status: ready
+updated: "2026-08-03"
 ---
 
 > **Para execução assistida:** use `superpowers:subagent-driven-development` ou `superpowers:executing-plans`. Os passos usam checkbox (`- [ ]`) para acompanhamento.
+
+> **Concluído em 2026-08-03.** 13 tarefas, CI verde nos três repositórios. O que a execução revelou de diferente do previsto está em "Divergências na execução", ao final.
 
 **Objetivo:** deixar os quatro repositórios operacionais, com PostgreSQL de pé, esquema completo aplicado por migration e suíte de testes rodando em cada stack.
 
 **Arquitetura:** desenvolvimento **container-first** - o host só precisa de Docker. `tcc-infra` sobe PostgreSQL via Docker Compose. `tcc-jobs` define o esquema em SQLAlchemy e o aplica por Alembic - é o dono do banco. `tcc-api` e `tcc-frontend` ganham esqueleto mínimo com healthcheck e teste, provando que a cadeia inteira funciona antes de qualquer regra de negócio.
 
-**Stack:** Docker Compose com Dockerfiles multi-stage (`dev` e `prod`), PostgreSQL 16, Python 3.12 + uv + SQLAlchemy 2.0 + Alembic + Typer, PHP 8.3 + Laravel, Angular. Código do host chega aos containers por bind mount; dependências ficam em volumes nomeados.
+**Stack:** Docker Compose com Dockerfiles multi-stage (`dev` e `prod`), PostgreSQL 16, Python 3.12 + uv + SQLAlchemy 2.0 + Alembic + Typer, PHP 8.4 + Laravel 13, Angular 22. Código do host chega aos containers por bind mount; dependências ficam em volumes nomeados.
 
 **Cobre:** semanas 1-2 do cronograma. RNF01, RNF04, RNF05.
 
@@ -2354,3 +2357,37 @@ Verificado por comando, não por impressão:
 ## Próximo plano
 
 Com a fundação de pé, segue o **Plano 02 - ETL** (semanas 3-5): download das 135 competências, parsers com as armadilhas de formato documentadas em [[Licitações - Pipeline de Dados]], camada medalhão em Parquet e carga via `COPY`.
+
+---
+
+## Divergências na execução
+
+Registradas porque contradizem o que este plano dizia, e porque várias voltam a acontecer. Detalhamento em [[Licitações - Ambiente de Desenvolvimento]].
+
+| Previsto | Real |
+|---|---|
+| PHP 8.3 | **PHP 8.4.24** - o `composer create-project` roda na imagem `composer:2`, que traz 8.4, e gera lock exigindo `>= 8.4.1` |
+| Karma como runner | **Vitest** - o Angular trocou; a flag `--browsers` não existe mais |
+| ESLint incluído | **Precisa de `ng add @angular-eslint/schematics`** |
+| Containers rodando como root | **Usuário com UID do host** - senão `dist/`, migrations e caches nascem intocáveis pelo editor |
+| Sem `.dockerignore` | **Obrigatório** - o `COPY . .` levava o `vendor/` do host por cima do `--no-dev`, anulando o flag |
+| Nada sobre rede | **VPN com rota IPv6 ULA derruba `apt` e `docker pull`** |
+| 32 testes no `tcc-jobs` | **33** |
+
+### Acréscimos ao escopo original
+
+Não estavam no plano e foram incorporados:
+
+- **Análise estática no nível máximo** das três stacks - ver [[Licitações - Qualidade e Integração Contínua]]
+- **`alembic check` no CI**, que detecta modelo alterado sem migration
+- **Job `build-prod`** nos três CIs, validando os estágios de produção
+- **`post_write_hooks` no Alembic**, formatando cada migration gerada
+- **Imagem da API reduzida de 1.04 GB para 230 MB**
+
+### Bugs encontrados durante a execução
+
+Três mereceram registro porque eram silenciosos:
+
+1. **`env.py` sobrescrevia a URL do banco.** Os testes passavam a URL do banco de teste, mas o `env.py` a substituía pela de desenvolvimento - a migration rodava no banco errado sem nenhum aviso.
+2. **`UnidadeGestora` fora do `__all__`.** Parece cosmético, mas a fixture depende de todos os modelos registrados no `Base.metadata`: faltando um, `create_all` cria só parte das tabelas.
+3. **`alembic check` passou local e falhou no CI.** Ele compara o metadata com o estado real do banco, e o de desenvolvimento já estava migrado enquanto o do runner nasce vazio.
