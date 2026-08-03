@@ -570,6 +570,14 @@ def test_colunas_da_chave_natural_presentes(arquivos: dict[str, bytes]) -> None:
     assert df.schema["codigo_modalidade"] == pl.Int32
 
 
+def test_preserva_colunas_das_dimensoes(arquivos: dict[str, bytes]) -> None:
+    """O parser não distribui - a carga é que separa cada coluna para a tabela
+    correta. Ver [[Licitações - Decisões de Modelagem]]."""
+    df = parse_licitacao(arquivos["Licitação"], C)
+
+    assert {"modalidade", "uf", "municipio", "nome_ug", "nome_orgao_superior"} <= set(df.columns)
+
+
 def test_arquivo_vazio_devolve_dataframe_vazio_com_esquema(arquivos: dict[str, bytes]) -> None:
     """EmpenhosRelacionados pode ter zero linhas - é caso normal, não erro."""
     df = parse_licitacao(b"", C)
@@ -619,6 +627,15 @@ COLUNAS_LICITACAO = {
     "Data Abertura": "data_abertura",
     "Valor Licitação": "valor",
 }
+
+# O CSV traz, em cada linha de licitação, atributos que pertencem às dimensões.
+# O parser preserva todas as colunas; a carga é que distribui cada uma para a
+# tabela correta - ver [[Licitações - Decisões de Modelagem]].
+#
+#   codigo_modalidade, modalidade      -> modalidade
+#   codigo_ug, nome_ug, uf, municipio  -> unidade_gestora
+#   codigo_orgao, nome_orgao,
+#   codigo_orgao_superior              -> orgao (hierarquia auto-relacionada)
 
 
 def extrair_do_zip(conteudo: bytes) -> dict[str, bytes]:
@@ -1698,7 +1715,7 @@ def test_carrega_dimensoes_e_fatos(sessao, engine: Engine, tmp_path: Path, zip_a
 
     carregar([C], arm, engine)
 
-    for tabela in ("orgao", "unidade_gestora", "fornecedor", "licitacao"):
+    for tabela in ("modalidade", "orgao", "unidade_gestora", "fornecedor", "licitacao"):
         total = sessao.execute(text(f"SELECT count(*) FROM {tabela}")).scalar()
         assert total is not None and total > 0, f"{tabela} vazia"
 
@@ -1822,6 +1839,7 @@ def _carregar_uma(
             return resultado
 
         with engine.begin() as conn:
+            resultado.inseridas["modalidade"] = _carregar_modalidades(conn, lic)
             resultado.inseridas["orgao"] = _carregar_orgaos(conn, lic)
             resultado.inseridas["unidade_gestora"] = _carregar_ugs(conn, lic)
             resultado.inseridas["fornecedor"] = _carregar_fornecedores(conn, item, part)
@@ -1873,29 +1891,56 @@ def _via_temporaria(
     return resultado.rowcount
 
 
-def _carregar_orgaos(conn: object, lic: pl.DataFrame) -> int:
+def _carregar_modalidades(conn: object, lic: pl.DataFrame) -> int:
+    """Precisa vir antes de licitacao: codigo_modalidade é FK."""
     df = (
         lic.select(
-            pl.col("codigo_orgao"),
-            pl.col("nome_orgao").alias("nome"),
-            pl.col("codigo_orgao_superior"),
-            pl.col("nome_orgao_superior"),
+            pl.col("codigo_modalidade").alias("codigo"),
+            pl.col("modalidade").alias("nome"),
         )
+        .filter(pl.col("codigo").is_not_null())
+        .unique(subset=["codigo"])
+    )
+    return _via_temporaria(conn, df, "modalidade", ["codigo", "nome"], ["codigo"], ["nome"])
+
+
+def _carregar_orgaos(conn: object, lic: pl.DataFrame) -> int:
+    """Órgãos subordinados e superiores, numa passada.
+
+    A hierarquia é auto-relacionada e a FK é diferida, então o superior pode
+    ser inserido depois do subordinado - a verificação acontece no commit.
+    Os superiores entram como órgãos próprios, com o nome que o CSV traz.
+    """
+    subordinados = lic.select(
+        pl.col("codigo_orgao").alias("codigo_orgao"),
+        pl.col("nome_orgao").alias("nome"),
+        pl.col("codigo_orgao_superior"),
+    )
+    superiores = lic.select(
+        pl.col("codigo_orgao_superior").alias("codigo_orgao"),
+        pl.col("nome_orgao_superior").alias("nome"),
+        pl.lit(None, dtype=pl.String).alias("codigo_orgao_superior"),
+    )
+    df = (
+        pl.concat([superiores, subordinados])  # superiores primeiro: o unique mantém o 1o
         .filter(pl.col("codigo_orgao").is_not_null())
-        .unique(subset=["codigo_orgao"])
+        .unique(subset=["codigo_orgao"], keep="last")
     )
     return _via_temporaria(
         conn, df, "orgao",
-        ["codigo_orgao", "nome", "codigo_orgao_superior", "nome_orgao_superior"],
+        ["codigo_orgao", "nome", "codigo_orgao_superior"],
         ["codigo_orgao"], ["nome"],
     )
 
 
 def _carregar_ugs(conn: object, lic: pl.DataFrame) -> int:
+    """Recebe uf e municipio, que dependem da UG e não da licitação."""
     df = (
         lic.select(
             pl.col("codigo_ug"),
             pl.col("nome_ug").alias("nome"),
+            pl.col("uf"),
+            pl.col("municipio"),
             pl.col("codigo_orgao"),
         )
         .filter(pl.col("codigo_ug").is_not_null())
@@ -1903,7 +1948,8 @@ def _carregar_ugs(conn: object, lic: pl.DataFrame) -> int:
     )
     return _via_temporaria(
         conn, df, "unidade_gestora",
-        ["codigo_ug", "nome", "codigo_orgao"], ["codigo_ug"], ["nome"],
+        ["codigo_ug", "nome", "uf", "municipio", "codigo_orgao"],
+        ["codigo_ug"], ["nome", "uf", "municipio"],
     )
 
 
@@ -1931,14 +1977,14 @@ def _carregar_fornecedores(conn: object, item: pl.DataFrame, part: pl.DataFrame)
 
 def _carregar_licitacoes(conn: object, lic: pl.DataFrame) -> int:
     colunas = [
-        "numero_licitacao", "codigo_ug", "codigo_modalidade", "modalidade",
-        "numero_processo", "objeto", "situacao", "uf", "municipio",
+        "numero_licitacao", "codigo_ug", "codigo_modalidade",
+        "numero_processo", "objeto", "situacao",
         "data_abertura", "data_resultado", "valor", "competencia",
     ]
     df = lic.select(colunas).unique(subset=CHAVE_NATURAL, keep="last")
     return _via_temporaria(
         conn, df, "licitacao", colunas, CHAVE_NATURAL,
-        ["modalidade", "situacao", "valor", "data_resultado"],
+        ["situacao", "valor", "data_resultado"],
     )
 
 
@@ -1977,6 +2023,8 @@ def _carregar_filhos(conn: object, df: pl.DataFrame, tabela: str) -> int:
     )
     return resultado.rowcount
 ```
+
+> **Atenção ao esquema normalizado:** `licitacao` não tem mais `modalidade`, `uf` nem `municipio`, e `orgao` não tem `nome_orgao_superior`. A carga precisa popular `modalidade` **antes** de `licitacao` (é FK), e a hierarquia de órgãos funciona porque a FK é diferida - o superior pode ser inserido depois do subordinado, dentro da mesma transação.
 
 > A carga de itens e participantes **apaga e reinsere** por competência em vez de fazer upsert: eles não têm chave natural própria, e um `DELETE` pela licitação seguido de `INSERT` é mais simples e mais rápido que tentar casar linha a linha. Ajuste no passo seguinte se o teste de idempotência acusar duplicata.
 

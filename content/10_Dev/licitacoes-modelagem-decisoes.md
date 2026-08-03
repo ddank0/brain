@@ -3,12 +3,12 @@ title: "Licitações - Decisões de Modelagem"
 type: note
 tags: [tcc, licitacoes, modelagem, postgresql, normalizacao]
 created: "2026-08-03"
-status: draft
+status: ready
 ---
 
 Justificativa das escolhas de modelagem do banco do [[TCC - Sistema Inteligente para Licitações]], com as dependências funcionais verificadas no dado real.
 
-> **Proposta, aguardando aprovação.** As correções de 3FN descritas aqui ainda não foram aplicadas ao código: exigem migration nova, ajuste dos modelos SQLAlchemy e mudança nos parsers do [[Licitações - Plano 02 - ETL]]. Nenhum dado foi carregado ainda, então a janela para mudar está aberta.
+> **Aplicado em 2026-08-03.** As três correções de 3FN estão no código, com migration única regenerada (nada havia sido carregado). 46 testes passando, Pyright strict limpo, `alembic check` sem divergência.
 
 O esquema em si está em [[Licitações - Modelo de Dados]]. Esta nota responde **por que** ele é assim, e registra o que foi corrigido depois de medir.
 

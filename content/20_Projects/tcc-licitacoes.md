@@ -23,6 +23,7 @@ O sistema é **analítico e preditivo**. Não substitui auditoria nem caracteriz
 | [[Licitações - Arquitetura do Sistema]] | Divisão poliglota, contratos entre camadas, alternativas descartadas |
 | [[Licitações - Arquitetura dos Jobs]] | Functional Core, Imperative Shell; contratos por import-linter |
 | [[Licitações - Modelo de Dados]] | Dimensões, fatos, chave natural, índices |
+| [[Licitações - Decisões de Modelagem]] | Por que o esquema é assim; dependências funcionais medidas |
 | [[Licitações - Pipeline de Dados]] | Medalhão, os cinco jobs, armadilhas do formato |
 | [[Licitações - Modelos Preditivos e Anomalias]] | SARIMA, Isolation Forest, avaliação sem rótulos |
 | [[Licitações - Qualidade e Integração Contínua]] | Análise estática, TDD por camada, pipelines |

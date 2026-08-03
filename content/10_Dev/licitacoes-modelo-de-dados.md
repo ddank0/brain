@@ -8,21 +8,32 @@ status: ready
 
 Esquema do banco do [[TCC - Sistema Inteligente para Licitações]]. Proprietário único: Alembic, do lado dos jobs em Python - ver [[Licitações - Arquitetura do Sistema]].
 
+O **porquê** de cada escolha, com as dependências funcionais medidas no dado real, está em [[Licitações - Decisões de Modelagem]]. O esquema está em 3FN, com uma desnormalização declarada.
+
 ## Dimensões
 
 | Tabela | Campos |
 |---|---|
-| `orgao` | `codigo_orgao` (PK), `nome`, `codigo_orgao_superior`, `nome_orgao_superior` |
-| `unidade_gestora` | `codigo_ug` (PK), `nome`, `codigo_orgao` (FK) |
+| `orgao` | `codigo_orgao` (PK), `nome`, `codigo_orgao_superior` (FK para si mesma, diferida) |
+| `unidade_gestora` | `codigo_ug` (PK), `nome`, `uf`, `municipio`, `codigo_orgao` (FK) |
+| `modalidade` | `codigo` (PK), `nome` |
 | `fornecedor` | `cnpj` (PK), `nome` |
+
+A hierarquia de órgãos é auto-relacionamento, com FK **diferida**: a carga insere em lote sem garantir que o superior venha antes do subordinado, e a verificação acontece no commit.
+
+`uf` e `municipio` pertencem à unidade gestora, não à licitação - `codigo_ug -> uf` e `codigo_ug -> municipio` são dependências funcionais perfeitas no dado real.
 
 ## Fatos
 
-**`licitacao`** - `id` (PK sintética), `numero_licitacao`, `codigo_ug`, `codigo_modalidade`, `modalidade`, `numero_processo`, `objeto`, `situacao`, `uf`, `municipio`, `data_abertura`, `data_resultado`, `valor` `NUMERIC(18,4)`, `competencia`
+**`licitacao`** - `id` (PK sintética), `numero_licitacao`, `codigo_ug` (FK), `codigo_modalidade` (FK), `numero_processo`, `objeto`, `situacao`, `data_abertura`, `data_resultado`, `valor` `NUMERIC(18,4)`, `competencia`
+
+Não guarda nome de modalidade nem localização: ambos eram dependências transitivas.
 
 **`item_licitacao`** - `licitacao_id` (FK), `codigo_item_compra`, `descricao`, `quantidade`, `valor_item`, `cnpj_vencedor` (FK)
 
 **`participante_licitacao`** - `licitacao_id` (FK), `codigo_item_compra`, `cnpj_participante` (FK), `flag_vencedor`
+
+`codigo_item_compra` **não** é FK para `item_licitacao`: 448 participantes por competência referenciam itens que não existem no arquivo de itens, e uma FK obrigatória descartaria justamente o dado mais valioso da fonte.
 
 ## Chave natural e idempotência
 
@@ -32,13 +43,23 @@ A ingestão opera por `INSERT ... ON CONFLICT DO UPDATE`: **reprocessar a mesma 
 
 Detalhe do dado real: licitações com `data_abertura` anterior ao mês do arquivo reaparecem em competências seguintes - a competência 202401 contém licitações abertas em 26/12/2023. A chave natural absorve isso naturalmente, mas significa que **linhas lidas não equivalem a licitações distintas**.
 
+## Convenção de nomes das constraints
+
+O `metadata` define `naming_convention`, então toda constraint recebe nome determinístico (`fk_licitacao_codigo_ug_unidade_gestora`, `uq_licitacao_numero_licitacao`).
+
+Sem isso o `autogenerate` cria constraints anônimas e o downgrade falha com `Can't emit DROP CONSTRAINT ... it has no name` - a migration deixa de ser reversível. Há teste garantindo que nenhuma FK fica sem nome.
+
 ## Índices obrigatórios
 
 Dado o volume (~21,8M linhas em participantes), necessários desde a primeira migration:
 
 - `participante_licitacao`: `licitacao_id`, `cnpj_participante`
 - `item_licitacao`: `licitacao_id`
-- `licitacao`: `codigo_orgao`, `data_abertura`, `codigo_modalidade`
+- `licitacao`: `data_abertura`, `codigo_modalidade`, `competencia`
+- `unidade_gestora`: `codigo_orgao`, `uf`
+- `orgao`: `codigo_orgao_superior`
+
+Particionamento de `participante_licitacao` foi avaliado e **descartado** - exigiria desnormalizar `competencia` para dentro dela, e não ajudaria os dois padrões de acesso reais. Justificativa em [[Licitações - Decisões de Modelagem]].
 
 ---
 
