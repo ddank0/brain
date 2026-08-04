@@ -8,7 +8,7 @@ status: ready
 
 > **Para execução assistida:** use `superpowers:subagent-driven-development` ou `superpowers:executing-plans`. Os passos usam checkbox (`- [ ]`) para acompanhamento.
 
-**Objetivo:** carregar as 135 competências (`201301`-`202404`) do Portal da Transparência no PostgreSQL, passando por camada intermediária em Parquet, com ingestão idempotente e registro de log.
+**Objetivo:** carregar as 136 competências (`201301`-`202404`) do Portal da Transparência no PostgreSQL, passando por camada intermediária em Parquet, com ingestão idempotente e registro de log.
 
 **Arquitetura:** Functional Core, Imperative Shell - ver [[Licitações - Arquitetura dos Jobs]]. Parsers e transformações são funções puras que recebem `bytes` e devolvem `DataFrame`; download, escrita em disco e `COPY` ficam na casca.
 
@@ -35,7 +35,7 @@ Contexto em [[Licitações - Pipeline de Dados]], [[Licitações - Fontes de Dad
 
 | Operação | Alvo |
 |---|---|
-| `ingest` das 135 competências | < 30 min |
+| `ingest` das 136 competências | < 30 min |
 | `load` completo | < 15 min |
 | `aggregate` | < 5 min |
 | Total (`ingest` + `load`) | **< 45 min** |
@@ -59,7 +59,7 @@ A decodificação tem que acontecer **antes** de o Polars ver os bytes.
 
 **16% das datas de abertura vêm vazias** - 411 de 2537. `data_abertura` é nullable no modelo, e o parser precisa de `strict=False`.
 
-**Desempenho do parsing:** 164 mil linhas em 0,22s. Extrapolando para 135 competências, ~30s de CPU em parsing - o gargalo será a rede no download e o `COPY` na carga, não a transformação.
+**Desempenho do parsing:** 164 mil linhas em 0,22s. Extrapolando para 136 competências, ~30s de CPU em parsing - o gargalo será a rede no download e o `COPY` na carga, não a transformação.
 
 ---
 

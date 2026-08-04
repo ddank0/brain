@@ -89,7 +89,7 @@ make verify      # verificação fim a fim da cadeia
 
 | Repositório | Testes | Cobertura |
 |---|---|---|
-| `tcc-jobs` | 33 | 97% |
+| `tcc-jobs` | 46 | 96% |
 | `tcc-api` | 2 | - |
 | `tcc-frontend` | 4 | - |
 

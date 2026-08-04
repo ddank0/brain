@@ -22,6 +22,20 @@ A regra que sustenta a reprodutibilidade: **bronze é imutável**. Descobrir na 
 
 ---
 
+## Distribuição para as dimensões
+
+O CSV traz, em cada linha de licitação, atributos que pertencem às dimensões. Os parsers **preservam todas as colunas**; é a carga que distribui cada uma para a tabela correta:
+
+| Colunas do CSV | Tabela de destino |
+|---|---|
+| `Código Modalidade`, `Modalidade Compra` | `modalidade` |
+| `Código UG`, `Nome UG`, `UF`, `Município` | `unidade_gestora` |
+| `Código Órgão`, `Nome Órgão`, `Código Órgão Superior` | `orgao`, com hierarquia auto-relacionada |
+
+A ordem importa: `modalidade` precisa existir antes de `licitacao`, porque é FK. Os órgãos superiores entram como órgãos próprios, e a FK diferida permite inseri-los depois dos subordinados na mesma transação.
+
+Justificativa em [[Licitações - Decisões de Modelagem]].
+
 ## Os cinco jobs
 
 | Comando | Entrada → Saída | Por que é separado |

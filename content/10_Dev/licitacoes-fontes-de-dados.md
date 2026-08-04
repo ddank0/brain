@@ -35,7 +35,7 @@ Fonte legalmente vigente sob a Lei 14.133/2021, cobrindo União, estados e munic
 
 - URL: `https://portaldatransparencia.gov.br/download-de-dados/licitacoes/{AAAAMM}`
 - Retorna ZIP com quatro CSVs por competência mensal
-- **Janela verificada mês a mês:** de `201301` até `202404`. A partir de `202405`, `403 AccessDenied`. A competência `202404` já vem truncada (832 KB contra ~2,8 MB de um mês típico)
+- **Janela verificada mês a mês:** de `201301` até `202404`, o que dá **136 competências** - 11 anos completos mais janeiro a abril de 2024. A partir de `202405`, `403 AccessDenied`. A competência `202404` já vem truncada (832 KB contra ~2,8 MB de um mês típico)
 
 **Causa da descontinuidade:** transição regulatória. A Lei 14.133/2021 encerrou o regime da Lei 8.666/1993 e tornou o PNCP a fonte oficial obrigatória. Os sistemas legados deixaram de alimentar essa base.
 
@@ -56,12 +56,12 @@ O arquivo de participantes é o achado mais valioso: ter o conjunto de concorren
 
 ## Decisão: abordagem híbrida
 
-**Fonte primária:** CSVs do Portal da Transparência, `201301`-`202404` (~135 meses).
+**Fonte primária:** CSVs do Portal da Transparência, `201301`-`202404` (136 competências).
 **Fonte bônus:** conector PNCP, apenas se houver tempo residual.
 
 **Justificativa:**
 
-1. **Extensão da série.** SARIMA com sazonalidade anual requer múltiplos ciclos completos. 135 meses sustentam isso com folga; ~60 do PNCP não.
+1. **Extensão da série.** SARIMA com sazonalidade anual requer múltiplos ciclos completos. 136 meses sustentam isso com folga; ~60 do PNCP não.
 2. **Reprodutibilidade.** Arquivos estáticos não caem na véspera da defesa. Dada a instabilidade medida do PNCP, isso vale mais que atualidade num trabalho com prazo fixo.
 3. **Riqueza do dado.** A tripla licitação/itens/participantes habilita atributos que o PNCP não expõe com a mesma facilidade.
 4. **Valor acadêmico da limitação.** O corte em abr/2024 documenta uma descontinuidade regulatória real - vira seção de metodologia, não confissão de fragilidade.
@@ -81,7 +81,7 @@ O arquivo de participantes é o achado mais valioso: ter o conjunto de concorren
 
 ## Volume estimado
 
-| Entidade | Linhas/mês | × 135 competências |
+| Entidade | Linhas/mês | × 136 competências |
 |---|---|---|
 | `licitacao` | 2.537 | ~342 mil |
 | `item_licitacao` | 51.808 | ~7 milhões |

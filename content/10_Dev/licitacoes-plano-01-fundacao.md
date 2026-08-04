@@ -2356,7 +2356,7 @@ Verificado por comando, não por impressão:
 
 ## Próximo plano
 
-Com a fundação de pé, segue o **Plano 02 - ETL** (semanas 3-5): download das 135 competências, parsers com as armadilhas de formato documentadas em [[Licitações - Pipeline de Dados]], camada medalhão em Parquet e carga via `COPY`.
+Com a fundação de pé, segue o **Plano 02 - ETL** (semanas 3-5): download das 136 competências, parsers com as armadilhas de formato documentadas em [[Licitações - Pipeline de Dados]], camada medalhão em Parquet e carga via `COPY`.
 
 ---
 
@@ -2383,6 +2383,22 @@ Não estavam no plano e foram incorporados:
 - **Job `build-prod`** nos três CIs, validando os estágios de produção
 - **`post_write_hooks` no Alembic**, formatando cada migration gerada
 - **Imagem da API reduzida de 1.04 GB para 230 MB**
+
+### Alterado depois da conclusão
+
+O esquema criado por este plano tinha **três violações de 3FN**, descobertas ao revisar a modelagem antes da carga de dados. Como nada havia sido carregado, a migration foi regenerada em vez de emendada.
+
+| Neste plano | Depois da revisão |
+|---|---|
+| 11 tabelas | **12** - `modalidade` virou dimensão |
+| `licitacao.modalidade` | Removido: FK para `modalidade` |
+| `licitacao.uf`, `.municipio` | Movidos para `unidade_gestora` |
+| `orgao.nome_orgao_superior` | Removido: auto-relacionamento com FK diferida |
+| Constraints anônimas | `naming_convention` no metadata |
+
+A convenção de nomes não era detalhe cosmético: sem ela o `autogenerate` cria constraints sem nome, e o downgrade falha com `Can't emit DROP CONSTRAINT ... it has no name`. Foi assim que o problema apareceu.
+
+Detalhes e as dependências funcionais medidas em [[Licitações - Decisões de Modelagem]].
 
 ### Bugs encontrados durante a execução
 

@@ -46,7 +46,7 @@ O sistema é **analítico e preditivo**. Não substitui auditoria nem caracteriz
 ## Critérios de sucesso
 
 1. Pipeline fim-a-fim executável com `docker compose up`.
-2. Base carregada com o histórico completo disponível (~135 meses).
+2. Base carregada com o histórico completo disponível: 136 competências, de `201301` a `202404`.
 3. Previsões com erro medido **contra baseline**, não em termos absolutos.
 4. Detector de anomalias com avaliação defensável apesar da ausência de rótulos.
 5. Resultados navegáveis por não-programador.

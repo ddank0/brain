@@ -180,7 +180,7 @@ A escolha por Polars/DuckDB não abre mão de desempenho: ambos são nativos (Ru
 │   │   │   └── evaluation.py      # backtesting e métricas
 │   │   └── cli.py                 # Typer - 5 comandos
 │   └── tests/
-├── api/                           # PHP 8.3 / Laravel
+├── api/                           # PHP 8.4 / Laravel 13
 │   ├── composer.json
 │   ├── Dockerfile
 │   ├── app/
@@ -246,7 +246,7 @@ Alvos verificáveis, para que "está rápido" seja medição e não impressão:
 
 | Operação | Alvo |
 |---|---|
-| `ingest` + `load` das 135 competências | < 45 min |
+| `ingest` + `load` das 136 competências | < 45 min |
 | `aggregate` completo | < 5 min |
 | `train` de todas as séries | < 30 min |
 | `score` completo | < 10 min |
