@@ -95,6 +95,22 @@ Documentadas a partir da inspeção do dado real - evitam horas de depuração:
 
 **`COPY` em vez de ORM na carga.** Inserir 21,8M linhas via SQLAlchemy ORM levaria horas; via `COPY` do PostgreSQL com `psycopg3`, minutos. ORM fica reservado para dimensões e para o caminho transacional.
 
+**Chaves estrangeiras removidas durante a carga inicial.** O perfil de uma competência mostrou 80% do tempo em `participante` (8,4s) e `item` (3,5s), e dentro deles o `INSERT ... SELECT` consumindo 8,06s dos 8,4s. O `EXPLAIN ANALYZE` apontou a causa: os dois triggers de FK de `participante_licitacao` custam 7,2s somados, verificados linha a linha em 161.400 chamadas.
+
+Duas hipóteses foram medidas:
+
+| Estratégia | Tempo | Resultado |
+|---|---|---|
+| Sem mudança | 8.400 ms | Referência |
+| `DEFERRABLE INITIALLY DEFERRED` | 8.400 ms | **Sem ganho** - o custo apenas migra para o commit |
+| `DROP CONSTRAINT` e recriar | 963 ms | 8,7x |
+
+Diferir não funciona porque a verificação continua por linha, só que no fim da transação. Recriar a constraint valida em lote: 35 ms para as mesmas 161.400 linhas.
+
+O custo é que `DROP CONSTRAINT` exige `ACCESS EXCLUSIVE`, que conflita com qualquer leitura concorrente - inclusive uma consulta da API. Por isso o modo depende da flag `--carga-inicial`, desligada por padrão: vale para a carga histórica com o banco fora de uso, não para a ingestão incremental.
+
+Medidos e mantidos como estão, por não valerem otimização: o *Seq Scan* de `ultima_ingestao` (0,099 ms, a tabela permanece com dezenas de linhas) e o `DELETE` de reprocessamento (0,118 ms, já usa índice).
+
 **`LazyFrame` atravessa as funções.** O ganho do Polars vem da avaliação *lazy* - o motor enxerga o encadeamento inteiro e otimiza, eliminando colunas não usadas e empurrando filtros para a leitura. Materializar a cada etapa mata isso. `.collect()` é chamado uma vez, ao final.
 
 **Sem laços Python sobre registros.** Toda transformação em operações vetorizadas. Ver a nota sobre desempenho em [[Licitações - Arquitetura do Sistema]].
