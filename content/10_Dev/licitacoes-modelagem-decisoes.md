@@ -163,7 +163,7 @@ O orçamento era de 15 minutos para o `load` completo.
 
 **Medido na carga real:** 62 minutos para 91 milhões de linhas, com os índices ativos o tempo todo. O alvo caiu, mas por erro de estimativa do volume, não por lentidão - a vazão ficou em 24.500 linhas/s, 2,3x a orçada por linha. Ver [[Licitações - Arquitetura do Sistema]].
 
-O plano B previsto era `DROP INDEX` antes da carga e `CREATE INDEX` depois. Ele não foi necessário: o perfil mostrou que o gargalo eram os **triggers de chave estrangeira**, não a manutenção dos índices. Removê-las durante o `INSERT` deu 8,7x, e é o que `tcc load --carga-inicial` faz - ver [[Licitações - Pipeline ETL]].
+O plano B previsto era `DROP INDEX` antes da carga e `CREATE INDEX` depois. Ele não foi necessário: o perfil mostrou que o gargalo eram os **triggers de chave estrangeira**, não a manutenção dos índices. Removê-las durante o `INSERT` deu 8,7x, e é o que `tcc load --carga-inicial` faz - ver [[Licitações - Pipeline de Dados]].
 
 Isso é coerente com a regra do projeto: não otimizar por intuição, medir e comparar com o orçamento.
 

@@ -116,4 +116,4 @@ O volume continua **cabendo na memória de uma máquina** e não caracteriza pro
 
 O ZIP de `201812` tem exatos 8.388.608 bytes e o servidor declara esse mesmo tamanho no `Content-Length` - o download está completo, o arquivo na origem é que está truncado. Re-baixar não resolve.
 
-A varredura dos cabeçalhos locais mostra `Licitação` e `ItemLicitação` íntegros e `ParticipantesLicitação` cortado em 5,2% dos 199,7 MB. O pipeline recupera os dois primeiros, então a série mensal fica completa; `participante` de `201812` fica vazio, e isso é registrado. Ver [[Licitações - Pipeline ETL]].
+A varredura dos cabeçalhos locais mostra `Licitação` e `ItemLicitação` íntegros e `ParticipantesLicitação` cortado em 5,2% dos 199,7 MB. O pipeline recupera os dois primeiros, então a série mensal fica completa; `participante` de `201812` fica vazio, e isso é registrado. Ver [[Licitações - Pipeline de Dados]].

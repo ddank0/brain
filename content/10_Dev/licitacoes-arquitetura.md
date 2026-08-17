@@ -258,7 +258,7 @@ Se um alvo for perdido, a causa provável é abstração indevida no caminho que
 
 ### O alvo da carga foi perdido, e não por lentidão
 
-Os 45 minutos foram orçados para 29 milhões de linhas. A carga real moveu **91 milhões** - a estimativa de volume errava por 3,1x, e o motivo está em [[Licitações - Fontes de Dados]].
+Os 45 minutos foram orçados para 29 milhões de linhas. A carga real moveu **91 milhões** - a estimativa de volume errava por 3,1x, e o motivo está em [[Licitações - Fontes de Dados Públicos]].
 
 Normalizando pelo que de fato foi processado:
 
