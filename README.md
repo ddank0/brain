@@ -1,6 +1,6 @@
 # brain_
 
-Personal knowledge vault — Obsidian notes published as a static site with a terminal-style UI.
+Personal knowledge vault - Obsidian notes published as a static site with a terminal-style UI.
 
 **Live:** [ddank0.github.io/brain](https://ddank0.github.io/brain)
 
@@ -10,7 +10,7 @@ Personal knowledge vault — Obsidian notes published as a static site with a te
 
 A second brain built on Obsidian, versioned in git, and published via GitHub Pages. Notes are written in Markdown with structured frontmatter, organized into domains, and cross-linked with `[[wikilinks]]`.
 
-The site renders everything with [Astro](https://astro.build) — full-text search via [Pagefind](https://pagefind.app), backlink graph, tag archive, command palette (`⌘K`).
+The site renders everything with [Astro](https://astro.build) - full-text search via [Pagefind](https://pagefind.app), backlink graph, tag archive, command palette (`⌘K`).
 
 ## Structure
 
@@ -24,7 +24,7 @@ content/           Obsidian vault (the actual notes)
 └── 90_Archive/    Completed or stale notes
 
 packages/
-├── cli/           vault CLI — validate, create, format, stats
+├── cli/           vault CLI - validate, create, format, stats
 └── site/          Astro 6 static site
 
 schemas/           JSON Schema for each note type (pre-commit validation)
@@ -49,7 +49,7 @@ npm run vault format            # normalize dates and tags
 npm run vault stats             # counts by type, top tags, orphans
 ```
 
-## Site — local dev
+## Site - local dev
 
 ```bash
 cd packages/site
@@ -64,10 +64,10 @@ npm run test:e2e  # Playwright E2E
 
 Pushes to `main` trigger the GitHub Actions pipeline:
 
-1. **validate** — runs `vault validate --strict` on all markdown
-2. **build** — `astro build` + `pagefind --site dist`
-3. **deploy** — uploads to GitHub Pages
+1. **validate** - runs `vault validate --strict` on all markdown
+2. **build** - `astro build` + `pagefind --site dist`
+3. **deploy** - uploads to GitHub Pages
 
 ## Design
 
-Terminal Violet — dark monospace UI with a violet accent palette, JetBrains Mono, and a command palette for keyboard-first navigation.
+Terminal Violet - dark monospace UI with a violet accent palette, JetBrains Mono, and a command palette for keyboard-first navigation.
