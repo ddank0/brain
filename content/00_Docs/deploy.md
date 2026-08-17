@@ -32,10 +32,10 @@ push → main
 ## Triggers
 
 O deploy roda automaticamente quando há push em `main` afetando:
-- `content/**` — novas notas ou edições
-- `packages/site/**` — mudanças no site
-- `schemas/**` — mudanças no schema
-- `.github/workflows/**` — mudanças no CI
+- `content/**` - novas notas ou edições
+- `packages/site/**` - mudanças no site
+- `schemas/**` - mudanças no schema
+- `.github/workflows/**` - mudanças no CI
 
 ## Dev Local
 

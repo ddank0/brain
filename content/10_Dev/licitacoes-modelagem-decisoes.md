@@ -118,10 +118,10 @@ Parece redundante, e é deliberado:
 
 | | Papel |
 |---|---|
-| `id` (PK) | Referência barata para as tabelas filhas. Um `bigint` em 21,8 milhões de linhas contra três colunas de texto |
+| `id` (PK) | Referência barata para as tabelas filhas. Um `bigint` em 74,8 milhões de linhas contra três colunas de texto |
 | Chave natural (UNIQUE) | Garante idempotência: reprocessar a mesma competência não duplica |
 
-**O número que sustenta a escolha:** `participante_licitacao` tem 21,8 milhões de linhas. Com FK composta de três colunas (`varchar(20)` + `varchar(10)` + `int`), cada linha carregaria ~34 bytes de chave em vez de 8. São ~570 MB só de chave estrangeira, além de índices maiores e JOINs mais lentos.
+**O número que sustenta a escolha:** `participante_licitacao` tem 74,8 milhões de linhas. Com FK composta de três colunas (`varchar(20)` + `varchar(10)` + `int`), cada linha carregaria ~34 bytes de chave em vez de 8. São ~1,9 GB só de chave estrangeira, além de índices maiores e JOINs mais lentos.
 
 A alternativa - usar a chave natural como PK - seria mais "pura" e mediria pior.
 
@@ -129,7 +129,7 @@ A alternativa - usar a chave natural como PK - seria mais "pura" e mediria pior.
 
 ## Particionamento: descartado, com justificativa
 
-`participante_licitacao` terá ~21,8 milhões de linhas, o que naturalmente levanta a questão.
+`participante_licitacao` terá ~74,8 milhões de linhas, o que naturalmente levanta a questão.
 
 **Descartado por dois motivos.**
 
@@ -142,7 +142,7 @@ A alternativa - usar a chave natural como PK - seria mais "pura" e mediria pior.
 
 Nenhum filtra por competência. Particionamento só acelera quando a consulta filtra pela chave de partição; caso contrário o planejador varre todas as partições e o custo aumenta.
 
-**Volume não justifica isoladamente.** PostgreSQL 16 lida bem com 21,8 milhões de linhas em tabela única, desde que os índices cubram os acessos - e cobrem.
+**Volume não justifica isoladamente.** PostgreSQL 16 lida bem com 74,8 milhões de linhas em tabela única, desde que os índices cubram os acessos - e cobrem.
 
 **Quando eu reconsideraria:** se o conector PNCP entrar e o volume subir uma ordem de magnitude, ou se aparecer consulta que filtre por período diretamente em participantes.
 
@@ -150,7 +150,7 @@ Nenhum filtra por competência. Particionamento só acelera quando a consulta fi
 
 ## Índices durante a carga: medir antes de otimizar
 
-A migration cria os índices antes de qualquer dado entrar. Inserir 21,8 milhões de linhas com índices ativos exige atualizar cada árvore B por linha, e o padrão em carga em massa é o inverso: carregar sem índice, criar depois.
+A migration cria os índices antes de qualquer dado entrar. Inserir 74,8 milhões de linhas com índices ativos exige atualizar cada árvore B por linha, e o padrão em carga em massa é o inverso: carregar sem índice, criar depois.
 
 **Decisão: manter os índices e medir.**
 
@@ -159,7 +159,11 @@ O motivo é que a alternativa tem custo próprio. Dropar e recriar índices sign
 - Migration sem os índices, mais comando separado que os cria - o que quebra o `alembic check`, hoje guardando contra divergência entre modelo e migration
 - Ou um caminho especial no job `load` que dropa e recria, adicionando estado e possibilidade de deixar o banco sem índice se falhar no meio
 
-O orçamento é de 15 minutos para o `load` completo. Se for respeitado com os índices ativos, a complexidade não se paga. **Plano B documentado**, se furar: `DROP INDEX` antes da carga em massa e `CREATE INDEX` depois, num comando `tcc load --carga-inicial` usado uma única vez.
+O orçamento era de 15 minutos para o `load` completo.
+
+**Medido na carga real:** 62 minutos para 91 milhões de linhas, com os índices ativos o tempo todo. O alvo caiu, mas por erro de estimativa do volume, não por lentidão - a vazão ficou em 24.500 linhas/s, 2,3x a orçada por linha. Ver [[Licitações - Arquitetura do Sistema]].
+
+O plano B previsto era `DROP INDEX` antes da carga e `CREATE INDEX` depois. Ele não foi necessário: o perfil mostrou que o gargalo eram os **triggers de chave estrangeira**, não a manutenção dos índices. Removê-las durante o `INSERT` deu 8,7x, e é o que `tcc load --carga-inicial` faz - ver [[Licitações - Pipeline ETL]].
 
 Isso é coerente com a regra do projeto: não otimizar por intuição, medir e comparar com o orçamento.
 
@@ -277,10 +281,10 @@ Normalizar `situacao` e `objeto` em tabelas próprias.
 
 Mais "puro" conceitualmente.
 
-**Descartado por medida:** ~570 MB adicionais só de chave estrangeira em `participante_licitacao`, com índices maiores e JOINs sobre três colunas de texto em vez de um `bigint`.
+**Descartado por medida:** ~1,9 GB adicionais só de chave estrangeira em `participante_licitacao`, com índices maiores e JOINs sobre três colunas de texto em vez de um `bigint`.
 
 ### Tabela única desnormalizada
 
 Um "grande achatado" com tudo, como saída dos CSVs.
 
-**Descartado** porque replicaria nome de órgão e de fornecedor em 21,8 milhões de linhas, e impediria a chave natural de garantir idempotência - o requisito central da ingestão.
+**Descartado** porque replicaria nome de órgão e de fornecedor em 74,8 milhões de linhas, e impediria a chave natural de garantir idempotência - o requisito central da ingestão.

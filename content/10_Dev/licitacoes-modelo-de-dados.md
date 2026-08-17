@@ -51,7 +51,7 @@ Sem isso o `autogenerate` cria constraints anônimas e o downgrade falha com `Ca
 
 ## Índices obrigatórios
 
-Dado o volume (~21,8M linhas em participantes), necessários desde a primeira migration:
+Dado o volume (~74,8M linhas em participantes), necessários desde a primeira migration:
 
 - `participante_licitacao`: `licitacao_id`, `cnpj_participante`
 - `item_licitacao`: `licitacao_id`

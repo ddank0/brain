@@ -27,7 +27,7 @@ Ele é o único que reconcilia três decisões já tomadas e aparentemente confl
 
 1. **Testabilidade alta** - exigida pelo TDD e pelo RNF02.
 2. **Não abstrair o Polars** - o ganho vem da avaliação *lazy*, e uma interface que devolva `DataFrame` materializado a cada etapa a elimina.
-3. **Não empilhar camadas de mapeamento** - cada cópia de registro custa, e são 21,8 milhões deles.
+3. **Não empilhar camadas de mapeamento** - cada cópia de registro custa, e são 74,8 milhões deles.
 
 No Functional Core, o `LazyFrame` atravessa as funções puras sem nenhuma interface no meio, e o `.collect()` acontece uma vez, na casca. Testabilidade sem custo de desempenho.
 
@@ -103,9 +103,9 @@ Trocar Isolation Forest por LOF passa a ser registrar outra implementação. É 
 
 ### Clean Architecture
 
-**Motivo: custo de cópia, com número.** Clean exige DTO em cada fronteira - `row → entity → use case output → response`. São três cópias por registro, ou **21,8 milhões × 3 alocações** em `participante_licitacao`.
+**Motivo: custo de cópia, com número.** Clean exige DTO em cada fronteira - `row → entity → use case output → response`. São três cópias por registro, ou **74,8 milhões × 3 alocações** em `participante_licitacao`.
 
-O orçamento de desempenho pede carga completa em menos de 45 minutos; esse desenho o estoura sozinho. E não há domínio rico que justifique o custo: não existe `Licitacao.aprovar()` com invariantes - os dados *são* o domínio.
+O orçamento de desempenho pede carga completa em menos de 75 minutos; esse desenho o estoura sozinho. E não há domínio rico que justifique o custo: não existe `Licitacao.aprovar()` com invariantes - os dados *são* o domínio.
 
 ### Hexagonal / Ports & Adapters
 

@@ -5,7 +5,7 @@ tags: [home]
 created: "2026-05-31"
 ---
 
-Second brain pessoal — Dev, Projetos e Estudos.
+Second brain pessoal - Dev, Projetos e Estudos.
 
 ---
 

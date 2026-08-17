@@ -16,32 +16,32 @@ Stack do site gerado a partir deste vault.
 | Conteúdo | Content Layer API + `glob()` loader |
 | Markdown | remark-wiki-link + rehype-slug |
 | Search | Pagefind (pós-build) |
-| CSS | Vanilla CSS — design system Terminal Violet |
-| JS | Vanilla JS — tabs + command palette |
+| CSS | Vanilla CSS - design system Terminal Violet |
+| JS | Vanilla JS - tabs + command palette |
 | Deploy | GitHub Pages via GitHub Actions |
 
 ## Fluxo de Build
 
 ```
 content/**/*.md
-  └── glob() loader        — lê frontmatter + body
-  └── remark-wiki-link     — [[wikilinks]] → <a href>
-  └── rehype-slug          — id nos headings
-  └── Astro SSG            — gera HTML estático
-  └── Pagefind             — indexa HTML para busca
-  └── dist/                — GitHub Pages
+  └── glob() loader        - lê frontmatter + body
+  └── remark-wiki-link     - [[wikilinks]] → <a href>
+  └── rehype-slug          - id nos headings
+  └── Astro SSG            - gera HTML estático
+  └── Pagefind             - indexa HTML para busca
+  └── dist/                - GitHub Pages
 ```
 
 ## Estrutura do Projeto
 
 ```
 brain/
-├── content/           — vault Obsidian
+├── content/           - vault Obsidian
 ├── packages/
-│   ├── cli/           — vault CLI (validate, create, stats)
-│   └── site/          — este site (Astro)
+│   ├── cli/           - vault CLI (validate, create, stats)
+│   └── site/          - este site (Astro)
 │       └── src/
-│           ├── lib/       — stats.ts, backlinks.ts, wikilinks.ts
+│           ├── lib/       - stats.ts, backlinks.ts, wikilinks.ts
 │           ├── components/
 │           ├── layouts/
 │           ├── pages/
@@ -57,4 +57,4 @@ brain/
 
 ## Backlinks
 
-Computados em `src/lib/backlinks.ts` — varre todos os `.md` extraindo `[[wikilinks]]` e constrói o mapa `slug → [{ slug, title }]` injetado em cada página de nota.
+Computados em `src/lib/backlinks.ts` - varre todos os `.md` extraindo `[[wikilinks]]` e constrói o mapa `slug → [{ slug, title }]` injetado em cada página de nota.

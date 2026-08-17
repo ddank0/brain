@@ -1333,7 +1333,7 @@ docker compose exec jobs uv run alembic revision --autogenerate -m "esquema inic
 
 Abrir o arquivo em `src/tcc_jobs/db/migrations/versions/` e verificar que ele cria as 11 tabelas: `orgao`, `unidade_gestora`, `fornecedor`, `licitacao`, `item_licitacao`, `participante_licitacao`, `ingestao_log`, `serie_mensal`, `execucao_modelo`, `previsao`, `score_anomalia`.
 
-Confirmar que a restrição `uq_licitacao_chave_natural` aparece, e que existem índices em `participante_licitacao.licitacao_id` e `participante_licitacao.cnpj_participante`. Sem esses índices, a carga de 21,8 milhões de linhas fica inviável.
+Confirmar que a restrição `uq_licitacao_chave_natural` aparece, e que existem índices em `participante_licitacao.licitacao_id` e `participante_licitacao.cnpj_participante`. Sem esses índices, a carga de 74,8 milhões de linhas fica inviável.
 
 - [ ] **Passo 5: Escrever o teste de ida e volta**
 

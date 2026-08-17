@@ -79,12 +79,41 @@ O arquivo de participantes é o achado mais valioso: ter o conjunto de concorren
 
 ---
 
-## Volume estimado
+## Volume real, medido na carga completa
 
-| Entidade | Linhas/mês | × 136 competências |
+As 136 competências foram carregadas e contadas. Os números abaixo são medidos, não extrapolados:
+
+| Entidade | Linhas | Em disco |
 |---|---|---|
-| `licitacao` | 2.537 | ~342 mil |
-| `item_licitacao` | 51.808 | ~7 milhões |
-| `participante_licitacao` | 161.400 | ~21,8 milhões |
+| `participante_licitacao` | 74.756.493 | 8.413 MB |
+| `item_licitacao` | 14.172.710 | 2.821 MB |
+| `licitacao` | 1.744.297 | 608 MB |
+| `fornecedor` | 373.496 | 70 MB |
+| `unidade_gestora` | 3.484 | 1,6 MB |
+| `orgao` | 294 | 160 kB |
+| **Total** | **91.050.922** | **12 GB** |
 
-Total aproximado de 29 milhões de linhas, entre 1 e 2 GB em disco. Volume que **cabe confortavelmente na memória de uma máquina** - não caracteriza processamento distribuído. Ver a decisão de dimensionamento em [[Licitações - Arquitetura do Sistema]].
+### A estimativa anterior errava por 3,1x
+
+A primeira versão desta nota projetava 29 milhões de linhas, sendo 21,8 milhões em participantes. O método foi multiplicar a competência `202401` pelas 136 competências.
+
+O erro está na amostra, não na aritmética: `202401` é uma das menores competências da série inteira. O volume cai de forma contínua ao longo dos anos, e desaba em 2024 com a migração para a Lei 14.133/2021.
+
+| Ano | Licitações | Média mensal |
+|---|---|---|
+| 2013 | 238.683 | 20.566 |
+| 2016 | 162.801 | 13.836 |
+| 2019 | 161.602 | 13.733 |
+| 2022 | 109.346 | 9.319 |
+| 2023 | 88.349 | 7.536 |
+| 2024 (4 meses) | 8.064 | 2.182 |
+
+Extrapolar de uma competência tardia subestimou a série por um fator de três. **Amostra única de série não estacionária não estima total** - a lição vale para qualquer dimensionamento futuro aqui.
+
+O volume continua **cabendo na memória de uma máquina** e não caracteriza processamento distribuído. Ver a decisão de dimensionamento em [[Licitações - Arquitetura do Sistema]].
+
+### Competência 201812 é publicada corrompida
+
+O ZIP de `201812` tem exatos 8.388.608 bytes e o servidor declara esse mesmo tamanho no `Content-Length` - o download está completo, o arquivo na origem é que está truncado. Re-baixar não resolve.
+
+A varredura dos cabeçalhos locais mostra `Licitação` e `ItemLicitação` íntegros e `ParticipantesLicitação` cortado em 5,2% dos 199,7 MB. O pipeline recupera os dois primeiros, então a série mensal fica completa; `participante` de `201812` fica vazio, e isso é registrado. Ver [[Licitações - Pipeline ETL]].

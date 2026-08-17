@@ -93,7 +93,7 @@ Documentadas a partir da inspeção do dado real - evitam horas de depuração:
 
 ## Decisões de desempenho
 
-**`COPY` em vez de ORM na carga.** Inserir 21,8M linhas via SQLAlchemy ORM levaria horas; via `COPY` do PostgreSQL com `psycopg3`, minutos. ORM fica reservado para dimensões e para o caminho transacional.
+**`COPY` em vez de ORM na carga.** Inserir 74,8M linhas via SQLAlchemy ORM levaria horas; via `COPY` do PostgreSQL com `psycopg3`, minutos. ORM fica reservado para dimensões e para o caminho transacional.
 
 **Chaves estrangeiras removidas durante a carga inicial.** O perfil de uma competência mostrou 80% do tempo em `participante` (8,4s) e `item` (3,5s), e dentro deles o `INSERT ... SELECT` consumindo 8,06s dos 8,4s. O `EXPLAIN ANALYZE` apontou a causa: os dois triggers de FK de `participante_licitacao` custam 7,2s somados, verificados linha a linha em 161.400 chamadas.
 

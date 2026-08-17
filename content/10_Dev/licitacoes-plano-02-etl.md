@@ -1458,7 +1458,7 @@ devolve 403, e isso é o fim da janela documentada, não falha do job."
 **Interfaces:**
 - Produz: `copiar_para_tabela(conn, tabela: str, df: pl.DataFrame, colunas: list[str]) -> int`.
 
-O ponto de desempenho mais crítico do projeto. Inserir 21,8 milhões de linhas por ORM levaria horas; por `COPY`, minutos.
+O ponto de desempenho mais crítico do projeto. Inserir 74,8 milhões de linhas por ORM levaria horas; por `COPY`, minutos.
 
 - [ ] **Passo 1: Escrever o teste que falha**
 
@@ -1577,7 +1577,7 @@ def copiar_para_tabela(
 ) -> int:
     """Carga em massa via COPY do PostgreSQL.
 
-    É a diferença entre minutos e horas: são 21,8 milhões de linhas em
+    É a diferença entre minutos e horas: são 74,8 milhões de linhas em
     participante_licitacao, e inserção por ORM instanciaria um objeto Python
     para cada uma.
 
@@ -1662,7 +1662,7 @@ Registre o número obtido: ele justifica a decisão na monografia.
 git add src/tcc_jobs/db/copiador.py tests/test_copiador.py
 git commit -m "feat: carga em massa via COPY
 
-Ponto de desempenho mais crítico do projeto: são 21,8 milhões de linhas em
+Ponto de desempenho mais crítico do projeto: são 74,8 milhões de linhas em
 participante_licitacao, e inserção por ORM instanciaria um objeto Python
 para cada uma.
 
@@ -2602,7 +2602,7 @@ UNION ALL SELECT 'participante_licitacao', count(*) FROM participante_licitacao
 ORDER BY 2 DESC;"
 ```
 
-Esperado, pela estimativa em [[Licitações - Fontes de Dados Públicos]]: ~342 mil licitações, ~7 milhões de itens, ~21,8 milhões de participantes. Divergência grande é sinal de erro no ETL, não de estimativa ruim - investigue antes de seguir.
+Esperado, pela estimativa em [[Licitações - Fontes de Dados Públicos]]: ~342 mil licitações, ~7 milhões de itens, ~74,8 milhões de participantes. Divergência grande é sinal de erro no ETL, não de estimativa ruim - investigue antes de seguir.
 
 - [ ] **Passo 6: Agregar e conferir a série**
 

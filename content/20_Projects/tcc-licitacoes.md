@@ -104,7 +104,7 @@ O cliente HTTP é **gerado** do OpenAPI, não escrito à mão.
 | Banca questiona recorte até abr/2024 | Média | Alto | Conector PNCP como bônus; descontinuidade regulatória documentada como achado |
 | Três toolchains atrasam a fase inicial | Média | Médio | Semanas 1-2 dedicadas a infra; fluência em duas das três |
 | Esquema duplicado (SQLAlchemy/Eloquent) diverge | Média | Médio | Alembic como proprietário único; testes de contrato |
-| Carga de 21,8M linhas excede o orçamento | Média | Médio | `COPY` em vez de ORM; carga por competência; índices desde a primeira migration |
+| ~~Carga excede o orçamento~~ **materializado** | - | Baixo | Ocorreu: 62 min contra 45 orçados, porque o volume real (91M) é 3,1x a estimativa. A vazão superou o previsto; alvo revisado para 75 min. Ver [[Licitações - Arquitetura do Sistema]] |
 | SARIMA não supera o baseline | Média | Médio | Resultado negativo é resultado válido; a comparação é a contribuição |
 | Anomalias sem validação convincente | Média | Alto | Três frentes de avaliação; limitação declarada |
 | Estouro de prazo | Média | Alto | Ordem de corte pré-definida |

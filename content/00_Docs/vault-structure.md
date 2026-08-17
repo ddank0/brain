@@ -40,8 +40,8 @@ status: ready       # draft | ready (opcional)
 
 ## Wikilinks
 
-Use `[[título da nota]]` para linkar entre notas. O título pode ser o nome do arquivo ou o `title` do frontmatter — ambos são resolvidos.
+Use `[[título da nota]]` para linkar entre notas. O título pode ser o nome do arquivo ou o `title` do frontmatter - ambos são resolvidos.
 
 ```markdown
-Ver também: [[Docker — Cheat Sheet]] e [[Git Workflows avançados]]
+Ver também: [[Docker - Cheat Sheet]] e [[Git Workflows avançados]]
 ```

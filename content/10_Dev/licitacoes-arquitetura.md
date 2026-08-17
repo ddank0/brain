@@ -21,13 +21,13 @@ Arquitetura do [[TCC - Sistema Inteligente para Licitações]]. Três camadas, c
 
 | Camada | Linguagem | Justificativa |
 |---|---|---|
-| **Jobs** | Python | Única com ecossistema maduro de séries temporais e detecção de anomalias. Polars/DuckDB cobrem 29M linhas com desempenho nativo |
+| **Jobs** | Python | Única com ecossistema maduro de séries temporais e detecção de anomalias. Polars/DuckDB cobrem 91M linhas com desempenho nativo |
 | **API** | PHP 8.4 / Laravel 13 | Só consulta tabelas e serializa JSON - sem impedimento técnico. Fluência do autor supera diferença de desempenho, irrelevante nesta carga |
 | **Dashboard** | Angular 22 | Fluência do autor. Tipagem forte casa com cliente gerado do OpenAPI |
 
 ### Por que Python é obrigatório nos jobs
 
-Não há em PHP equivalente maduro a SARIMAX com seleção automática de ordem, diagnóstico de resíduos e intervalos de confiança. Implementar do zero consumiria semanas em código que não é a contribuição do trabalho e cuja correção seria difícil de defender. O mesmo, em menor grau, vale para transformar 21,8M linhas: PHP não tem equivalente a Polars, e o processamento recairia em laço interpretado.
+Não há em PHP equivalente maduro a SARIMAX com seleção automática de ordem, diagnóstico de resíduos e intervalos de confiança. Implementar do zero consumiria semanas em código que não é a contribuição do trabalho e cuja correção seria difícil de defender. O mesmo, em menor grau, vale para transformar 74,8M linhas: PHP não tem equivalente a Polars, e o processamento recairia em laço interpretado.
 
 ### Custo assumido
 
@@ -92,7 +92,7 @@ A organização interna dos jobs que materializa essa regra é **Functional Core
 | Exploração ad-hoc | **DuckDB** | SQL direto sobre Parquet; fora do caminho crítico |
 | Banco | **PostgreSQL 16** | Especificado no documento original; funções de janela nativas |
 | ORM/migrations | **SQLAlchemy 2.0 + Alembic** | Proprietário do esquema |
-| Carga em massa | **`COPY` via psycopg3** | Minutos em vez de horas para 21,8M linhas |
+| Carga em massa | **`COPY` via psycopg3** | Minutos em vez de horas para 74,8M linhas |
 | Séries temporais | **statsforecast** (+ statsmodels no diagnóstico) | AutoARIMA compilado com Numba |
 | Anomalias | **scikit-learn** | `IsolationForest` e `LocalOutlierFactor` nativos |
 | API | **PHP 8.4.24 / Laravel 13.23** | Fluência do autor |
@@ -106,7 +106,7 @@ A organização interna dos jobs que materializa essa regra é **Functional Core
 
 ### Nota sobre o desempenho do Python
 
-Polars é escrito em Rust, DuckDB em C++, NumPy em C, scikit-learn em Cython, e statsforecast compila com Numba/LLVM. Ao processar 21,8 milhões de registros, os dados **não passam pelo interpretador Python** - ele apenas monta o plano de execução. O custo de interpretação incide sobre dezenas de chamadas de função, não sobre milhões de linhas.
+Polars é escrito em Rust, DuckDB em C++, NumPy em C, scikit-learn em Cython, e statsforecast compila com Numba/LLVM. Ao processar 74,8 milhões de registros, os dados **não passam pelo interpretador Python** - ele apenas monta o plano de execução. O custo de interpretação incide sobre dezenas de chamadas de função, não sobre milhões de linhas.
 
 Consequência de projeto: **não escrever laços em Python sobre registros**. Toda transformação em operações vetorizadas do Polars.
 
@@ -244,14 +244,30 @@ CORS habilitado para a origem do frontend.
 
 Alvos verificáveis, para que "está rápido" seja medição e não impressão:
 
-| Operação | Alvo |
-|---|---|
-| `ingest` + `load` das 136 competências | < 45 min |
-| `aggregate` completo | < 5 min |
-| `train` de todas as séries | < 30 min |
-| `score` completo | < 10 min |
-| Endpoints de consulta (p95) | < 300 ms |
-| Endpoints analíticos (p95) | < 500 ms |
-| Carga inicial de uma tela do dashboard | < 2 s |
+| Operação | Alvo | Medido |
+|---|---|---|
+| `load` das 136 competências | < 45 min | **62 min** - alvo perdido |
+| `aggregate` completo | < 5 min | **10 s** |
+| `train` de todas as séries | < 30 min | não medido |
+| `score` completo | < 10 min | não medido |
+| Endpoints de consulta (p95) | < 300 ms | não medido |
+| Endpoints analíticos (p95) | < 500 ms | não medido |
+| Carga inicial de uma tela do dashboard | < 2 s | não medido |
 
 Se um alvo for perdido, a causa provável é abstração indevida no caminho quente - ver "Onde não desacoplar", acima.
+
+### O alvo da carga foi perdido, e não por lentidão
+
+Os 45 minutos foram orçados para 29 milhões de linhas. A carga real moveu **91 milhões** - a estimativa de volume errava por 3,1x, e o motivo está em [[Licitações - Fontes de Dados]].
+
+Normalizando pelo que de fato foi processado:
+
+| | Previsto | Realizado |
+|---|---|---|
+| Linhas | 29 milhões | 91 milhões |
+| Tempo | 45 min | 62 min |
+| Vazão | 10.700 linhas/s | **24.500 linhas/s** |
+
+O pipeline entrega **2,3x a vazão orçada por linha**. O alvo caiu porque o denominador estava errado, não porque o caminho quente degradou.
+
+O alvo fica **revisado para 75 minutos**, com a vazão de 24.500 linhas/s como a métrica que realmente vale acompanhar - ela não depende de o volume da fonte ter sido bem estimado. A carga é operação única e offline; 62 minutos não estão no caminho de nenhum usuário.
