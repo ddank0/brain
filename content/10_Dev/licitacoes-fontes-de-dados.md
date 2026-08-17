@@ -81,17 +81,17 @@ O arquivo de participantes é o achado mais valioso: ter o conjunto de concorren
 
 ## Volume real, medido na carga completa
 
-As 136 competências foram carregadas e contadas. Os números abaixo são medidos, não extrapolados:
+As 136 competências foram carregadas e contadas com `count(*)`. Os números abaixo são medidos, não extrapolados - e não vêm de `n_live_tup`, que é estimativa do planner e chegou a divergir em 1.274 linhas numa primeira versão desta nota:
 
 | Entidade | Linhas | Em disco |
 |---|---|---|
 | `participante_licitacao` | 74.756.493 | 8.413 MB |
 | `item_licitacao` | 14.172.710 | 2.821 MB |
-| `licitacao` | 1.744.297 | 608 MB |
+| `licitacao` | 1.743.023 | 608 MB |
 | `fornecedor` | 373.496 | 70 MB |
 | `unidade_gestora` | 3.484 | 1,6 MB |
 | `orgao` | 294 | 160 kB |
-| **Total** | **91.050.922** | **12 GB** |
+| **Total** | **91.049.511** | **12 GB** |
 
 ### A estimativa anterior errava por 3,1x
 

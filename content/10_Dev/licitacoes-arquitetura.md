@@ -246,7 +246,7 @@ Alvos verificáveis, para que "está rápido" seja medição e não impressão:
 
 | Operação | Alvo | Medido |
 |---|---|---|
-| `load` das 136 competências | < 45 min | **62 min** - alvo perdido |
+| `load` das 136 competências | < 45 min | **24,6 min** |
 | `aggregate` completo | < 5 min | **10 s** |
 | `train` de todas as séries | < 30 min | não medido |
 | `score` completo | < 10 min | não medido |
@@ -256,18 +256,27 @@ Alvos verificáveis, para que "está rápido" seja medição e não impressão:
 
 Se um alvo for perdido, a causa provável é abstração indevida no caminho quente - ver "Onde não desacoplar", acima.
 
-### O alvo da carga foi perdido, e não por lentidão
+### O alvo foi perdido, depois recuperado - e a causa não era o volume
 
-Os 45 minutos foram orçados para 29 milhões de linhas. A carga real moveu **91 milhões** - a estimativa de volume errava por 3,1x, e o motivo está em [[Licitações - Fontes de Dados Públicos]].
+A primeira carga completa levou **62 minutos** contra os 45 orçados. A explicação imediata parecia óbvia e estava errada: o volume real é 3,1x a estimativa, logo o orçamento é que estaria defasado. Com esse raciocínio o alvo chegou a ser revisado para 75 minutos.
 
-Normalizando pelo que de fato foi processado:
+O que desmentiu foi olhar a duração por competência:
 
-| | Previsto | Realizado |
+| Competência | Licitações | Tempo |
 |---|---|---|
-| Linhas | 29 milhões | 91 milhões |
-| Tempo | 45 min | 62 min |
-| Vazão | 10.700 linhas/s | **24.500 linhas/s** |
+| `201301` | 7.104 | 2,1 s |
+| `202404` | 721 | 31,1 s |
 
-O pipeline entrega **2,3x a vazão orçada por linha**. O alvo caiu porque o denominador estava errado, não porque o caminho quente degradou.
+Dez vezes menos dado, quinze vezes mais tempo. Não é volume - é custo que cresce com o tamanho acumulado da tabela.
 
-O alvo fica **revisado para 75 minutos**, com a vazão de 24.500 linhas/s como a métrica que realmente vale acompanhar - ela não depende de o volume da fonte ter sido bem estimado. A carga é operação única e offline; 62 minutos não estão no caminho de nenhum usuário.
+A causa é o `ADD CONSTRAINT`: ele **revalida a tabela filha inteira**, não as linhas novas. A remoção das chaves estrangeiras estava no escopo da competência, então a carga revalidava 136 vezes uma tabela que cresce até 74,8 milhões de linhas - O(N x M). Medido na base cheia: 15,9 s para uma única FK de `participante_licitacao`, e eram quatro por competência.
+
+Movendo o contexto para o escopo do lote:
+
+| | Por competência | Por lote |
+|---|---|---|
+| Revalidações | 544 | 4 |
+| Tempo total | 62 min | **24,6 min** |
+| Vazão | 24.500 linhas/s | **61.600 linhas/s** |
+
+O alvo de 45 minutos **volta a valer** e é cumprido com folga, apesar do volume 3,1x maior. A lição: quando o custo por unidade cresce ao longo do lote, o problema é escopo de operação, não tamanho de dado - e a média esconde isso. Só a série por competência mostrou.

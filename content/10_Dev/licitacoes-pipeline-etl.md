@@ -107,7 +107,11 @@ Duas hipóteses foram medidas:
 
 Diferir não funciona porque a verificação continua por linha, só que no fim da transação. Recriar a constraint valida em lote: 35 ms para as mesmas 161.400 linhas.
 
-O custo é que `DROP CONSTRAINT` exige `ACCESS EXCLUSIVE`, que conflita com qualquer leitura concorrente - inclusive uma consulta da API. Por isso o modo depende da flag `--carga-inicial`, desligada por padrão: vale para a carga histórica com o banco fora de uso, não para a ingestão incremental.
+**O escopo é o lote, não a competência.** O 8,7x acima foi medido numa competência sobre tabela quase vazia e **não extrapola**. O `ADD CONSTRAINT` revalida a tabela filha *inteira*: na base cheia são 15,9 s para uma única FK de `participante_licitacao`. Com o contexto por competência, a carga completa revalidava 136 vezes uma tabela crescente - O(N x M) - e levou 62 minutos. Com o contexto no lote, 24,6.
+
+O sintoma era visível e passou despercebido na primeira leitura: `201301` carregou 7.104 licitações em 2,1 s, e `202404` carregou 721 em 31,1 s. **Média esconde custo que cresce; a série por competência não.**
+
+O custo é que `DROP CONSTRAINT` exige `ACCESS EXCLUSIVE`, que conflita com qualquer leitura concorrente - inclusive uma consulta da API. Por isso o modo depende da flag `--carga-inicial`, desligada por padrão: vale para a carga histórica com o banco fora de uso, não para a ingestão incremental. E como a janela sem constraint agora atravessa várias transações, morte abrupta do processo deixa o banco sem as FKs.
 
 Medidos e mantidos como estão, por não valerem otimização: o *Seq Scan* de `ultima_ingestao` (0,099 ms, a tabela permanece com dezenas de linhas) e o `DELETE` de reprocessamento (0,118 ms, já usa índice).
 

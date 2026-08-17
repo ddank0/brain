@@ -59,7 +59,7 @@ O sistema é **analítico e preditivo**. Não substitui auditoria nem caracteriz
 | Semanas | Entrega | Requisitos | Status |
 |---|---|---|---|
 | 1-2 | Docker Compose, PostgreSQL, Alembic, esqueleto das três stacks | RNF01, RNF04, RNF05 | **concluído** |
-| 3-5 | ETL em Python: download, parse, `COPY`, medalhão; carga de 201301-202404 | RF01, RF02, RF03, RF10 | **concluído** - 91M linhas carregadas |
+| 3-5 | ETL em Python: download, parse, `COPY`, medalhão; carga de 201301-202404 | RF01, RF02, RF03, RF10 | **concluído** - 91M linhas em 24,6 min |
 | 6 | API em Laravel: consulta e análise histórica; exportação do OpenAPI | RF04, RF05, RF08, RNF03 | próximo |
 | 7-9 | SARIMA, backtesting, baseline, seleção de parâmetros | RF06 | - |
 | 10-12 | Features, Isolation Forest, LOF, avaliação em três frentes | RF07 | - |
@@ -104,7 +104,7 @@ O cliente HTTP é **gerado** do OpenAPI, não escrito à mão.
 | Banca questiona recorte até abr/2024 | Média | Alto | Conector PNCP como bônus; descontinuidade regulatória documentada como achado |
 | Três toolchains atrasam a fase inicial | Média | Médio | Semanas 1-2 dedicadas a infra; fluência em duas das três |
 | Esquema duplicado (SQLAlchemy/Eloquent) diverge | Média | Médio | Alembic como proprietário único; testes de contrato |
-| ~~Carga excede o orçamento~~ **materializado** | - | Baixo | Ocorreu: 62 min contra 45 orçados, porque o volume real (91M) é 3,1x a estimativa. A vazão superou o previsto; alvo revisado para 75 min. Ver [[Licitações - Arquitetura do Sistema]] |
+| Carga excede o orçamento | Baixa | Baixo | Ocorreu e foi resolvido: 62 min viraram 24,6 ao mover a remoção das FKs para o escopo do lote. O alvo de 45 min é cumprido com 91M linhas, 3,1x a estimativa. Ver [[Licitações - Arquitetura do Sistema]] |
 | SARIMA não supera o baseline | Média | Médio | Resultado negativo é resultado válido; a comparação é a contribuição |
 | Anomalias sem validação convincente | Média | Alto | Três frentes de avaliação; limitação declarada |
 | Estouro de prazo | Média | Alto | Ordem de corte pré-definida |
