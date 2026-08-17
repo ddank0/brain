@@ -33,7 +33,7 @@ Valem para todas as tarefas:
 - **Nomenclatura proibida:** nunca `suspeita`, `irregularidade`, `fraude` ou equivalente, em nenhum identificador, label ou comentário.
 - **Identificadores em inglês**, comentários e commits em português.
 - **Commits:** `tipo(escopo): descrição`, imperativo.
-- Nenhum `.ai-context.md` é versionado - já estão no `.gitignore`.
+- Arquivos de contexto local de ferramentas não são versionados - ficam em `.git/info/exclude`.
 - Nenhum dado do pipeline é versionado (`data/`, `*.parquet`, `*.zip`).
 
 ---
@@ -2351,7 +2351,7 @@ Verificado por comando, não por impressão:
 - [ ] `docker compose exec jobs uv run alembic downgrade base` e `upgrade head` funcionam nos dois sentidos
 - [ ] Os três estágios `prod` compilam (`docker build --target prod`)
 - [ ] CI verde nos três repositórios
-- [ ] Nada indevido versionado: `git ls-files | grep -E 'AI_CONTEXT|\.env$|vendor/|node_modules/'` vazio nos cinco repositórios
+- [ ] Nada indevido versionado: `git ls-files | grep -E '\.env$|vendor/|node_modules/'` vazio nos cinco repositórios
 - [ ] O host tem apenas Docker instalado - nenhum PHP, Composer ou dependência de projeto fora dos containers
 
 ## Próximo plano
