@@ -250,13 +250,49 @@ Alvos verificáveis, para que "está rápido" seja medição e não impressão:
 | `aggregate` completo | < 5 min | **10 s** |
 | `train` de todas as séries | < 30 min | não medido |
 | `score` completo | < 10 min | não medido |
-| Endpoints de consulta (p95) | < 300 ms | não medido |
-| Endpoints analíticos (p95) | < 500 ms | não medido |
+| Endpoints de consulta (p95) | < 300 ms | **111 ms** (pior dos três) |
+| Endpoints analíticos (p95) | < 500 ms | **163 ms**, com uma exceção medida |
 | Carga inicial de uma tela do dashboard | < 2 s | não medido |
 
 Se um alvo for perdido, a causa provável é abstração indevida no caminho quente - ver "Onde não desacoplar", acima.
 
-### O alvo foi perdido, depois recuperado - e a causa não era o volume
+### Latência dos endpoints, medida em 2026-08-18
+
+Contra a base real de 1,74 milhão de licitações, 150 requisições por endpoint, com o recorte de competência sorteado a cada chamada. O sorteio existe porque repetir a mesma consulta mede só o caminho quente: a mesma listagem custa 46 ms com cache quente e 2.348 ms com cache frio.
+
+| Endpoint | p50 | p95 | Alvo |
+|---|---|---|---|
+| `GET /licitacoes` | 58 ms | **111 ms** | 300 ms |
+| `GET /licitacoes/{id}` | 28 ms | **33 ms** | 300 ms |
+| `GET /health` | 18 ms | **19 ms** | 300 ms |
+| `/analytics/evolucao` | 22 ms | **30 ms** | 500 ms |
+| `/analytics/modalidades` | 25 ms | **34 ms** | 500 ms |
+| `/analytics/orgaos` | 28 ms | **56 ms** | 500 ms |
+| `/analytics/fornecedores` sem filtro | 149 ms | **163 ms** | 500 ms |
+| `/analytics/fornecedores` com período | 237 ms | **582 ms** | 500 ms - **não atingido** |
+
+### O único alvo não atingido, e por quê
+
+O ranking de fornecedores com filtro de período agrega linearmente com o tamanho do recorte:
+
+| Recorte | Tempo |
+|---|---|
+| 4 meses | 54 ms |
+| 16 meses | 123 ms |
+| 4 anos | 548 ms |
+| 9 anos | 1.054 ms |
+
+O ponto de virada está em torno de três anos. Três saídas foram medidas e descartadas:
+
+- **Índice de cobertura** em `(cnpj) INCLUDE (...)`: leva o pior caso de 1.099 ms para 564 ms - ainda acima - ao custo de 97 MB.
+- **Granularidade anual** materializada: 750 mil linhas, e o recorte de 9 anos ainda leva 552 ms. Ganho de 2x, insuficiente, e as bordas parciais exigiriam combinar duas tabelas.
+- **Cobrir a série inteira pela tabela global**: implementado, e resolve o caso extremo (1.054 ms para 33 ms), mas não os intermediários.
+
+O custo é inerente: agregar centenas de milhares de linhas por CNPJ leva o tempo que leva. O alvo continua declarado como 500 ms, e **o desvio fica registrado em vez de o alvo ser afrouxado** - o p50 está dentro, e o estouro atinge recortes acima de três anos, que a tela de análise não usa por padrão. Se virar necessidade real, a saída é materializar por faixa e não otimizar a consulta.
+
+Uma nota de método: a primeira medição deu p95 de 3.045 ms porque o script sorteava as duas pontas do intervalo de forma uniforme - o que parece neutro e não é. Aquela distribuição gera mediana de 26 meses e 39% dos casos acima de três anos, algo que nenhuma tela faz. O sorteio passou a ser ponderado por larguras plausíveis, e isso está no script.
+
+### O alvo da carga foi perdido, depois recuperado - e a causa não era o volume
 
 A primeira carga completa levou **62 minutos** contra os 45 orçados. A explicação imediata parecia óbvia e estava errada: o volume real é 3,1x a estimativa, logo o orçamento é que estaria defasado. Com esse raciocínio o alvo chegou a ser revisado para 75 minutos.
 
