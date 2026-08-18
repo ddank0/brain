@@ -48,6 +48,41 @@ Todos são agregações, portanto vetorizáveis em Polars. Nenhum exige laço po
 
 ---
 
+## Em aberto - erro de digitação da fonte é anomalia?
+
+**Decidir no Plano 05, antes de treinar o detector.**
+
+Medido na base carregada: **291.430 itens (2,06%) têm `quantidade x valor_item` acima de R$ 1 bilhão**, e 9.221 passam de R$ 1 trilhão. O caso extremo soma R$ 960 sextilhões - mais que o PIB mundial por várias ordens de grandeza.
+
+A origem é rastreável e não é erro de cálculo nosso:
+
+```
+UNIMED MISSÕES/RS, competência 202301, 1 item
+"ASSISTENCIA MEDICA - HOSPITALAR / DOMICILIAR"
+quantidade 2.000.000.000,0000 x valor_item 4.800.000,0000 = R$ 9,6 quatrilhões
+```
+
+Dois bilhões de unidades de um convênio médico. O valor total foi lançado no campo de quantidade.
+
+### A tensão
+
+Esses registros **são** estatisticamente atípicos, então um Isolation Forest vai colocá-los no topo do ranking - e estará certo, pelo critério que lhe demos. Mas o que o trabalho se propõe a sinalizar é **padrão atípico de contratação**, não **erro de preenchimento**.
+
+Se o detector entrega uma lista dominada por erro de digitação, ele funciona e não serve. E a distinção não pode ser feita depois, olhando o resultado: ela muda o que entra como atributo.
+
+### Caminhos, a decidir com medida
+
+1. **Tratar como classe própria.** Um passo de qualidade antes do detector separa "implausível" de "atípico", e a API expõe os dois. Mais honesto, e vira seção de metodologia - a taxa de 2,06% é resultado.
+2. **Winsorizar ou usar log.** Reduz o peso do extremo sem descartar. Preserva a linha, mas dilui um sinal que pode ser legítimo em contrato grande de verdade.
+3. **Usar atributos robustos.** Quantidade de itens e de participantes em vez de valor absoluto - o ranking por quantidade já produz resultado plausível hoje, enquanto o ranking por valor não.
+4. **Não tratar.** Assumir que erro de preenchimento é um achado válido. Defensável, mas precisa estar declarado - senão a banca lê a lista e conclui que o detector não funciona.
+
+### O que já se sabe
+
+O ranking por **valor** hoje é dominado por esses casos. O mesmo ranking por **quantidade de itens** devolve distribuidores e farmacêuticas com presença consistente - J. J. VITALLI com 70.296 itens em 7.338 licitações, Sigma-Aldrich, Cristália. Perfil plausível de fornecedor recorrente.
+
+Isso é evidência de que a escolha do atributo, e não do algoritmo, decide a qualidade do resultado.
+
 ## Avaliação sem rótulos
 
 Não existe conjunto rotulado de "licitações anômalas". Esta é a **principal fragilidade metodológica** do módulo, e é enfrentada explicitamente por três frentes:
