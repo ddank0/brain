@@ -115,6 +115,20 @@ O custo é que `DROP CONSTRAINT` exige `ACCESS EXCLUSIVE`, que conflita com qual
 
 Medidos e mantidos como estão, por não valerem otimização: o *Seq Scan* de `ultima_ingestao` (0,099 ms, a tabela permanece com dezenas de linhas) e o `DELETE` de reprocessamento (0,118 ms, já usa índice).
 
+**A fonte da agregação é o silver, não o banco.** Medido ao dimensionar o ranking de fornecedores, que precisa dos 14,2 milhões de linhas de `item_licitacao`:
+
+| Fonte | Tempo |
+|---|---|
+| `pl.read_database` do PostgreSQL | 205 s (187 s só na transferência) |
+| `INSERT ... SELECT` em SQL puro | 21 s |
+| `pl.scan_parquet` sobre `silver/item/*.parquet` | **2,3 s** |
+
+São 89x. O Parquet é colunar e comprimido, e o `scan` lazy projeta apenas as colunas usadas - quatro de nove, neste caso. Ler do banco paga serialização pelo socket por linha.
+
+O padrão `read_database` continua adequado para `serie_mensal`, que lê 1,74 milhão de linhas de `licitacao`. A regra prática que sai disso: **acima de alguns milhões de linhas, agregue a partir do silver**; o banco é destino da agregação, não fonte.
+
+O custo é um acoplamento novo: o `aggregate` passa a depender dos parquets em disco. É coerente com o medalhão, mas limpar o `silver` quebra o job.
+
 **`LazyFrame` atravessa as funções.** O ganho do Polars vem da avaliação *lazy* - o motor enxerga o encadeamento inteiro e otimiza, eliminando colunas não usadas e empurrando filtros para a leitura. Materializar a cada etapa mata isso. `.collect()` é chamado uma vez, ao final.
 
 **Sem laços Python sobre registros.** Toda transformação em operações vetorizadas. Ver a nota sobre desempenho em [[Licitações - Arquitetura do Sistema]].

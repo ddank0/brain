@@ -58,7 +58,18 @@ Todas as consultas abaixo rodaram contra a base real de 91.049.511 linhas, não 
 
 `serie_mensal` agrega por `(competencia, codigo_orgao, codigo_modalidade)`. Não existe nada materializado por fornecedor, então o ranking sairia de um `GROUP BY` sobre os 14,2 milhões de linhas de `item_licitacao`.
 
-Medido: **7,9 segundos**. Além de estourar o orçamento, viola a regra de dependência número 1 do projeto. A solução não é otimizar a consulta - é mover o cálculo para o lote, que é o que a Tarefa 1 faz.
+Medido: **7,9 segundos**. Além de estourar o orçamento, viola a regra de dependência número 1 do projeto.
+
+Quatro caminhos foram medidos antes de escolher:
+
+| Caminho | Ranking global | Espaço | Veredito |
+|---|---|---|---|
+| Consulta direta | 7.866 ms | 0 | 26x o alvo |
+| Índice de cobertura | 4.656 ms | 670 MB | 9x o alvo, e caro |
+| Materializar por `(competencia, cnpj)` | 1.530 ms | 156 MB | 3x o alvo no global |
+| **Materializar nas duas granularidades** | **esperado < 200 ms** | ~190 MB | Escolhido |
+
+O detalhe da escolha, e as três formas medidas de alimentar a agregação, estão na Tarefa 1.
 
 ### Cache frio é o risco real do RNF06
 
@@ -72,7 +83,7 @@ A API é um esqueleto: só `routes/api.php` com `/health`, um teste (`HealthTest
 
 ---
 
-## Tarefa 1: Tabela `ranking_fornecedor` no tcc-jobs
+## Tarefa 1: Tabelas de ranking de fornecedores no tcc-jobs
 
 **Repositório:** `tcc-jobs`. É o dono do esquema - a tabela nasce aqui, nunca no Laravel.
 
@@ -83,19 +94,62 @@ A API é um esqueleto: só `routes/api.php` com `/health`, um teste (`HealthTest
 - Modificar: `src/tcc_jobs/db/agregacao_carga.py` (casca)
 - Testes: `tests/test_agregacao.py`, `tests/test_agregacao_carga.py`
 
-**Interface produzida:** `serie_fornecedor(lf: pl.LazyFrame) -> pl.LazyFrame`, agregando por `(competencia, cnpj)`.
+### Por que existe, com número
 
-**Colunas:** `competencia`, `cnpj`, `itens_vencidos`, `valor_total`, `licitacoes_distintas`.
+O ranking do RF05 sairia de um `GROUP BY` sobre os 14,2 milhões de linhas de `item_licitacao`: **7.866 ms** medidos na base cheia, 26x o orçamento de 500 ms. Além disso viola a regra de dependência número 1 - a API não executa cálculo caro.
 
-Agregar por competência, e não um ranking global, é o que permite ao endpoint filtrar por período sem recalcular. O ranking global vira `SUM` sobre poucas linhas.
+Um índice de cobertura foi testado e **descartado por medida**: `(cnpj_vencedor) INCLUDE (valor_item, quantidade)` leva o tempo para 4.656 ms, ainda 9x acima do alvo, e custa **670 MB** - mais que a tabela materializada inteira.
+
+### Duas granularidades, não uma
+
+Materializar só por `(competencia, cnpj)` resolve metade do problema. Medido sobre a tabela pronta:
+
+| Consulta | Tempo |
+|---|---|
+| Ranking filtrado por período | **129 ms** |
+| Ranking global | **1.530 ms** |
+
+O global ainda agrega 1,65 milhão de linhas por CNPJ em tempo de request, e é o caso mais provável de uso - é o que a tela de análise histórica abre por padrão. Daí a segunda tabela, agregada só por `cnpj`, com 326 mil linhas.
+
+A segunda sai da primeira com um `group_by` adicional dentro do mesmo job: custo marginal de segundos, e derruba o global para a mesma faixa do filtrado.
+
+**Interfaces produzidas:**
+- `serie_fornecedor(lf: pl.LazyFrame) -> pl.LazyFrame`, por `(competencia, cnpj)`
+- `ranking_fornecedor_total(lf: pl.LazyFrame) -> pl.LazyFrame`, por `cnpj`, derivada da primeira
+
+**Colunas:** `itens_vencidos`, `licitacoes_distintas`, `valor_total`, mais as chaves.
+
+### A fonte é o silver, não o banco
+
+Três formas de alimentar a agregação foram medidas:
+
+| Fonte | Tempo | Observação |
+|---|---|---|
+| Polars lendo do banco (padrão atual do `aggregate`) | **205 s** | 187 s só na transferência; 810 MB em memória |
+| `INSERT ... SELECT` em SQL puro | **21 s** | rápido, mas a agregação sai do núcleo funcional |
+| **Polars lendo `silver/item/*.parquet`** | **2,3 s** | colunar e comprimido; o `scan` lazy projeta só 4 das 9 colunas |
+
+A via silver é **89x mais rápida que ler do banco** e a única que preserva o Functional Core: a função recebe `LazyFrame` e devolve `LazyFrame`, testável com fixture de parquet, sem banco.
+
+O padrão atual (`pl.read_database`) funciona para `serie_mensal` porque lê 1,74M linhas de `licitacao`. Com 14,2M linhas de `item_licitacao` o gargalo vira a serialização pelo socket do PostgreSQL - 187 dos 205 segundos.
+
+**Contrato que muda:** o `aggregate` passa a depender também dos parquets em disco, não só do banco. É coerente com o medalhão - silver existe para ser reprocessável sem rebaixar nada -, mas precisa estar documentado: limpar o `silver` quebra o job.
+
+### `valor_total` não cabe em `Decimal(18,4)`
+
+Medido: `valor_item * quantidade` chega a **9,6 x 10^20**, e **1.232 itens (0,009%)** passam do limite de 18 dígitos, contra mediana de R$ 45.736.
+
+A coluna é `Decimal(38,4)`. Com `Decimal(18,4)` a carga estouraria - e, pior, poderia estourar em silêncio dependendo do caminho.
+
+Os valores extremos são reais na fonte, não erro de parsing: já confirmados na revisão do Plano 02, com máximo de R$ 2,43 trilhões numa licitação de `202012`.
 
 - [ ] **Passo 1: Escrever o teste do núcleo**
 
-Em `tests/test_agregacao.py`, seguindo o que já existe para `serie_mensal`. Use valores assimétricos - dois valores simétricos fazem média e mediana coincidirem e o teste deixa de distinguir uma da outra.
+Em `tests/test_agregacao.py`, com fixture de `LazyFrame` - nada de banco. Use valores assimétricos: dois valores simétricos fazem média e mediana coincidirem, e o teste deixa de distinguir uma da outra.
 
 ```python
 def test_serie_fornecedor_agrega_por_competencia_e_cnpj() -> None:
-    resultado = serie_fornecedor(_entrada_itens()).collect()
+    resultado = serie_fornecedor(_itens()).collect()
     linha = resultado.filter(
         (pl.col("competencia") == "202401") & (pl.col("cnpj") == "11111111111111")
     )
@@ -103,30 +157,53 @@ def test_serie_fornecedor_agrega_por_competencia_e_cnpj() -> None:
     assert linha["valor_total"][0] == Decimal("500.0000")
 
 
-def test_serie_fornecedor_conta_licitacoes_distintas() -> None:
-    """Dois itens da mesma licitação contam como uma licitação vencida."""
-    ...
+def test_conta_licitacoes_distintas_pela_chave_natural() -> None:
+    """Dois itens da mesma licitação contam como uma licitação vencida.
+    No silver não existe `licitacao_id` - ele é gerado pelo banco -, então a
+    identidade é a chave natural."""
 
 
-def test_serie_fornecedor_ignora_cnpj_sentinela() -> None:
-    """`-11` é "Sigiloso" e `-2` é "Inválido" na fonte - são ausência de dado,
-    não fornecedor. Entrar no ranking os transformaria em vencedor fictício."""
-    ...
+def test_ignora_cnpj_sentinela() -> None:
+    """`-11` é "Sigiloso" e `-2` é "Inválido" na fonte, e `ESTRANG*` marca
+    fornecedor estrangeiro sem CNPJ. São ausência de dado, não fornecedor:
+    entrariam no ranking como vencedor fictício."""
+
+
+def test_valor_total_suporta_os_extremos_reais() -> None:
+    """1.232 itens passam de 1e14. Com Decimal(18,4) a soma estoura."""
+
+
+def test_ranking_total_deriva_da_serie_por_competencia() -> None:
+    """A soma do ranking global tem que bater com a soma da série por
+    competência - se divergir, as duas tabelas contam coisas diferentes e a
+    tela mostra números que não fecham entre si."""
 ```
 
 - [ ] **Passo 2: Rodar e ver falhar**
 
 - [ ] **Passo 3: Implementar o núcleo**
 
-`LazyFrame` entra, `LazyFrame` sai, sem `collect()` no meio. `valor_total` é `valor_item * quantidade`, com `cast` explícito para `Decimal(18, 4)`.
+`LazyFrame` entra, `LazyFrame` sai, sem `collect()` no meio.
 
-Filtrar os sentinelas documentados em [[Licitações - Fontes de Dados Públicos]]: `cnpj` em `('-11', '-2')` e os que começam com `ESTRANG`.
+A competência vem do nome do arquivo, via `include_file_paths`, e não de um join com licitação. Isso só é válido porque **nenhuma chave natural aparece em duas competências** - verificado no silver inteiro: 1.743.023 linhas para 1.743.023 chaves distintas.
 
-- [ ] **Passo 4: Modelo e migration**
+- [ ] **Passo 4: Travar essa premissa com teste**
 
-Adicionar `RankingFornecedor` em `analitico.py` e incluir em `__all__` - a fixture de teste depende de todo modelo estar registrado no metadata.
+```python
+def test_chave_natural_nao_se_repete_entre_competencias() -> None:
+    """A competência é derivada do nome do arquivo. Se a mesma licitação
+    aparecesse em dois meses, o item seria contado duas vezes e atribuído à
+    competência errada. Hoje não acontece; o teste é o que impede a premissa
+    de envelhecer em silêncio."""
+```
 
-Índice em `(competencia)` e em `(cnpj)`. Sem índice, o filtro por período volta a varrer tudo.
+Rodar contra o silver real, marcado para não entrar na suíte rápida.
+
+- [ ] **Passo 5: Modelos e migration**
+
+`RankingFornecedor` e `RankingFornecedorTotal` em `analitico.py`, ambos em `__all__` - a fixture depende de todo modelo estar no metadata.
+
+Índices: `(competencia)` e `(cnpj)` na primeira; `(cnpj)` na segunda. `valor_total` em `Decimal(38, 4)`.
 
 ```bash
 docker compose exec jobs uv run alembic revision --autogenerate -m "ranking de fornecedores"
@@ -134,36 +211,39 @@ docker compose exec jobs uv run alembic upgrade head
 docker compose exec jobs uv run alembic check
 ```
 
-- [ ] **Passo 5: Estender a casca do aggregate**
+- [ ] **Passo 6: Estender a casca do aggregate**
 
-Em `agregacao_carga.py`, mesmo padrão de `serie_mensal`: `TRUNCATE` mais `COPY`. O `TRUNCATE` é o que torna o recálculo idempotente.
+Mesmo padrão de `serie_mensal`: `TRUNCATE` mais `COPY`. O `TRUNCATE` é o que torna o recálculo idempotente.
 
-- [ ] **Passo 6: Teste da casca**
+A leitura sai de `Armazenamento`, não de `pl.read_database`.
 
-Em `tests/test_agregacao_carga.py`, incluindo: reagregar não duplica, o total bate com a soma de `item_licitacao`, e nenhum CNPJ do ranking está fora de `fornecedor`.
+- [ ] **Passo 7: Teste da casca**
 
-- [ ] **Passo 7: Rodar contra a base real e medir**
+Reagregar não duplica; o total bate com a soma de `item_licitacao`; nenhum CNPJ do ranking está fora de `fornecedor`; as duas tabelas somam o mesmo total.
+
+- [ ] **Passo 8: Rodar contra a base real e medir**
 
 ```bash
 docker compose exec jobs uv run tcc aggregate
 ```
 
-Registrar o tempo total. O orçamento do `aggregate` é 5 min e ele levava 10 s; a agregação de 14,2M linhas é o que pode mudar isso.
+**Critérios:**
 
-Depois, medir o endpoint futuro:
+| Medida | Alvo |
+|---|---|
+| `aggregate` completo | < 5 min (hoje 10 s; estimado ~15 s) |
+| Ranking global | < 500 ms (era 7.866 ms) |
+| Ranking filtrado por período | < 500 ms |
 
-```sql
-SELECT cnpj, sum(itens_vencidos), sum(valor_total)
-FROM ranking_fornecedor GROUP BY cnpj ORDER BY 3 DESC LIMIT 20;
-```
+Registrar os números medidos na nota de arquitetura, com data.
 
-**Critério:** abaixo de 500 ms. Eram 7.866 ms lendo `item_licitacao`.
-
-- [ ] **Passo 8: Suíte, contratos e commit**
+- [ ] **Passo 9: Suíte, contratos e commit**
 
 ```bash
 uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run lint-imports && uv run pytest -q
 ```
+
+Cada módulo novo do núcleo entra no `.importlinter` na mesma tarefa que o cria - e `test_contratos_arquitetura.py` falha se esquecer.
 
 ---
 
@@ -313,7 +393,7 @@ Inclua o caso de `limit` e o de filtro por período. Verifique que nenhum CNPJ s
 
 - [ ] **Passo 2: Implementar lendo as tabelas materializadas**
 
-`/analytics/orgaos` sai de `serie_mensal`; `/analytics/fornecedores`, de `ranking_fornecedor`.
+`/analytics/orgaos` sai de `serie_mensal`. `/analytics/fornecedores` escolhe a tabela pela presença de filtro de período: sem filtro lê `ranking_fornecedor_total` (326 mil linhas); com filtro, `ranking_fornecedor` (1,65 milhão). Ler a granularidade fina no caso global custaria 1.530 ms, 3x o alvo.
 
 **Nenhum dos dois toca `item_licitacao` ou `participante_licitacao`.** Se algum precisar, a resposta certa é criar tabela materializada, não otimizar a consulta.
 
@@ -467,7 +547,8 @@ Se continuar zerado com todos os endpoints exercitados, remover por migration no
 - [ ] `/docs` renderizando
 - [ ] `/health` expondo a última ingestão (fecha o RF10)
 - [ ] Consultas com p95 < 300 ms e analíticos < 500 ms, **medidos com competências sorteadas**
-- [ ] `ranking_fornecedor` populada pelo `aggregate`, e nenhum endpoint tocando `item_licitacao` ou `participante_licitacao`
+- [ ] `ranking_fornecedor` e `ranking_fornecedor_total` populadas pelo `aggregate` a partir do silver, e nenhum endpoint tocando `item_licitacao` ou `participante_licitacao`
+- [ ] `aggregate` completo abaixo de 5 min, com os números registrados
 - [ ] Competências atípicas (`202404`, `201812`) marcadas nas respostas analíticas
 - [ ] Teste de vocabulário passando
 - [ ] PHPStan nível 10 limpo, Pint aplicado, CI verde
