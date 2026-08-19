@@ -84,3 +84,18 @@ O campo `serie_chave` identifica a série no formato `tipo:codigo` - `orgao:2600
 ### Por que persistir `execucao_modelo`
 
 Guardar parâmetros e métricas por rodada é o que permite afirmar na defesa "foram comparadas N configurações, com estes resultados", em vez de apresentar um número isolado sem procedência. Também é o que viabiliza a avaliação do detector de anomalias descrita em [[Licitações - Modelos Preditivos e Anomalias]].
+
+## Índice de busca textual
+
+`licitacao.objeto` tem índice **GIN trigram**, e não B-tree.
+
+A API busca com `ILIKE '%termo%'`. O curinga à esquerda impede o uso da árvore, e o plano cai em *Parallel Seq Scan* sobre 235 MB de texto em 1,74 milhão de linhas.
+
+| | Sem índice | Com trigram |
+|---|---|---|
+| Consulta no banco | 1.137 ms | **10 ms** |
+| Endpoint completo | 2.609 ms | **57 ms** |
+
+Custa 306 MB e cerca de 104 s para criar. A extensão `pg_trgm` é criada por migration do Alembic, porque o esquema pertence ao `tcc-jobs`.
+
+**A busca é sensível a acento.** Ignorar acento exigiria combinar `unaccent` com o índice, o que dobra o custo de manutenção do índice funcional. A limitação está fixada por teste na API, para ficar visível em vez de virar surpresa de quem usa.

@@ -62,6 +62,21 @@ Alembic é o **único** sistema de migrations do projeto. As migrations do Larav
 
 A especificação é exportada para o repositório a cada alteração de contrato, não tratada como subproduto. O cliente TypeScript do Angular é **gerado** dela (`openapi-generator`), eliminando duplicação entre front e API e mantendo os dois sincronizados por construção.
 
+### Escolha da ferramenta de OpenAPI
+
+Duas foram avaliadas:
+
+| Ferramenta | Como funciona | Veredito |
+|---|---|---|
+| `dedoc/scramble` | Infere a especificação do código, sem anotações | **Descartada** |
+| `zircote/swagger-php` | Atributos PHP explícitos nos controllers | **Escolhida** |
+
+O Scramble economiza anotação, mas está em `0.13.x`. Como o cliente TypeScript do Angular é **gerado** deste arquivo, uma biblioteca pré-1.0 que mude a saída entre versões produziria um cliente que não corresponde à API - e a divergência apareceria em tempo de execução, no front.
+
+Com atributos explícitos o contrato é declarado, não adivinhado. O custo é verbosidade; o ganho é que a especificação só muda quando alguém a muda.
+
+Um teste roda `openapi:export --check` e falha se o arquivo versionado divergir do código. Sem ele, a especificação envelhece em silêncio - que é o único jeito de esse contrato quebrar.
+
 ### Substituibilidade
 
 Cada seta do diagrama é um formato aberto. Reescrever a API em Go significa implementar o mesmo OpenAPI sobre as mesmas tabelas - nada mais muda. Reescrever o ETL em Rust significa produzir os mesmos Parquet com o mesmo esquema.
@@ -96,6 +111,8 @@ A organização interna dos jobs que materializa essa regra é **Functional Core
 | Séries temporais | **statsforecast** (+ statsmodels no diagnóstico) | AutoARIMA compilado com Numba |
 | Anomalias | **scikit-learn** | `IsolationForest` e `LocalOutlierFactor` nativos |
 | API | **PHP 8.4.24 / Laravel 13.23** | Fluência do autor |
+| Especificação da API | **zircote/swagger-php 6.6** | Atributos PHP explícitos; ver a decisão abaixo |
+| Busca textual | **pg_trgm** (índice GIN) | `ILIKE '%termo%'` não usa B-tree: 1.137 ms contra 10 ms |
 | Dashboard | **Angular 22.1 + TypeScript 6.0** (Material e ECharts no Plano 06) | Fluência do autor; cliente gerado do OpenAPI |
 | Contêineres | **Docker + Docker Compose** | RNF05 |
 | Testes | **pytest**, **PHPUnit**, **Vitest** | Padrões de cada ecossistema |
