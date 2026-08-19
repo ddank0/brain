@@ -103,9 +103,51 @@ elas terem sido gravadas.
 - As 55 séries com menos de 36 meses de calendário ficaram fora: **297 licitações, 0,017% do volume**. (Uma versão anterior desta nota dizia 0,4% - era o número de antes do preenchimento de calendário, quando o corte era por contagem de linhas.)
 - O experimento avalia previsão um-ano-à-frente com re-treino anual; horizontes menores com re-treino mensal não foram medidos.
 
-## Em aberto - erro de digitação da fonte é anomalia?
+## Resultado da avaliação de anomalias (2026-08-19)
 
-**Decidir no Plano 05, antes de treinar o detector.**
+Detector: IsolationForest (100 árvores, seed 42) sobre oito atributos contextualizados, normalização robusta por mediana/IQR. Universo: 1.743.023 licitações, pontuadas em 6,2 min.
+
+### Frente 1 - injeção sintética
+
+1.000 licitações perturbadas de forma multiplicativa e reproduzível (seed fixa), re-pontuadas junto com o universo:
+
+| Corte | Recuperadas | Recall |
+|---|---|---|
+| top-1.000 | 16 | 1,6% |
+| top-1% (17.430) | 133 | **13,3%** |
+| top-5% (87.151) | 328 | 32,8% |
+
+O recall é baixo, e a causa é estrutural e medida: **a cauda natural da base é mais extrema que qualquer planta plausível** - há ~17 mil linhas reais com razão de valor acima de 310x, então perturbações de 10-100x não alcançam o top-1%. O experimento mede menos o detector e mais a natureza da base: o extremo real é dominado por registros da classe qualidade-de-dado.
+
+O desenho do experimento também precisou de uma iteração, registrada porque é achado: a primeira versão plantava alvos absolutos (taxa de vitória 1,0, HHI alto), e isso é o TÍPICO desta base - a mediana real de taxa de vitória é 1,0, consequência dos 70,3% de participante único. Plantar o típico e cobrar recuperação mede o gerador, não o detector.
+
+### Frente 2 - concordância entre métodos
+
+IsolationForest vs LocalOutlierFactor, amostra estratificada de 200 mil:
+
+| Medida | Valor |
+|---|---|
+| Jaccard dos top-1% | **0,049** |
+| Spearman dos scores | 0,242 |
+
+Concordância baixa, com causa conhecida e declarada: **70% das linhas têm features idênticas** (dispensas de participante único com razões neutras), e métodos de densidade como o LOF degeneram com empates massivos - o próprio scikit-learn emite o aviso. A concordância baixa aqui não arbitra qual método está certo; diz que o dado tem uma estrutura (duplicação massiva do caso típico) com a qual o LOF não lida.
+
+### Frente 3 - qualitativa do top-20, e o artefato que ela encontrou
+
+A primeira rodada tinha as 20 posições do topo ocupadas por licitações sigilosas da Polícia Federal, com HHI 0,976. A inspeção revelou artefato: o CNPJ sentinela `-11` ("Sigiloso") era contado como vencedor recorrente, e a concentração era de representação, não de comportamento. **As features de identidade (taxa de vitória, HHI) passaram a excluir sentinelas** - como o ranking de fornecedores já fazia - e o recall sintético dobrou como efeito colateral.
+
+Após a correção, o top-20 é 100% da classe `contem_item_implausivel`, dominado por `razao_valor_grupo` entre 1.100x e 67.000x: **a cabeça do ranking é qualidade de dado**, não padrão de contratação. Isso é informação, não fracasso - a flag booleana exposta pela API permite à tela segmentar as duas classes, e a contribuição por atributo diz em cada caso o porquê da posição.
+
+### Limitações declaradas
+
+- Não existe rótulo; as três frentes são triangulação, não validação. Declarado no texto.
+- O recall sintético usa plantas plausíveis por construção - plantas mais extremas seriam recuperadas trivialmente e inflariam o número.
+- O LOF é inadequado à estrutura desta base (empates massivos); serve como contraste declarado, não como segundo veredito.
+- A porta de plausibilidade é absoluta (R$ 1 bi/item); erros de digitação relativos (item a 145.000x a mediana do código, abaixo do corte absoluto) permanecem no universo e dominam o topo. Porta relativa fica como trabalho futuro.
+
+## Decidido - erro de digitação da fonte NÃO é anomalia de contratação
+
+**Decidido e implementado na T1 do Plano 05:** implausível e atípico são classes distintas. O corte (R$ 1 bi por item, declarado em `CORTE_PLAUSIBILIDADE`) marca 291.430 itens; a licitação afetada ganha a flag `contem_item_implausivel` como atributo em vez de descarte.
 
 Medido na base carregada: **291.430 itens (2,06%) têm `quantidade x valor_item` acima de R$ 1 bilhão**, e 9.221 passam de R$ 1 trilhão. O caso extremo soma R$ 960 sextilhões - mais que o PIB mundial por várias ordens de grandeza.
 
