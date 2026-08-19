@@ -107,7 +107,7 @@ O cliente HTTP é **gerado** do OpenAPI, não escrito à mão.
 | Três toolchains atrasam a fase inicial | Média | Médio | Semanas 1-2 dedicadas a infra; fluência em duas das três |
 | Esquema duplicado (SQLAlchemy/Eloquent) diverge | Média | Médio | Alembic como proprietário único; testes de contrato |
 | Carga excede o orçamento | Baixa | Baixo | Ocorreu e foi resolvido: 62 min viraram 24,6 ao mover a remoção das FKs para o escopo do lote. O alvo de 45 min é cumprido com 91M linhas, 3,1x a estimativa. Ver [[Licitações - Arquitetura do Sistema]] |
-| SARIMA não supera o baseline | **Alta** | Médio | Medição preliminar em 15 séries: vence em cerca de metade, mas perde no MAE médio. Resultado negativo é resultado válido; a comparação é a contribuição. Ver [[Licitações - Plano 04 - Previsão]] |
+| SARIMA não supera o baseline | - | - | **Medido no backtesting completo:** empate na mediana geral, vitória clara nas séries grandes (MASE 0,879-0,967 no top-10%; MAE de valor cai à metade). A preliminar que apontava derrota era artefato de janela única. Ver [[Licitações - Modelos Preditivos e Anomalias]] |
 | Anomalias sem validação convincente | Média | Alto | Três frentes de avaliação; limitação declarada |
 | Estouro de prazo | Média | Alto | Ordem de corte pré-definida |
 

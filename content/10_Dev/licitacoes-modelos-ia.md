@@ -48,6 +48,42 @@ Todos são agregações, portanto vetorizáveis em Polars. Nenhum exige laço po
 
 ---
 
+## Resultado do backtesting - SARIMA vs baseline (2026-08-19)
+
+23.730 avaliações: 1.459 séries por órgão e modalidade, 9 janelas expansivas de 12 meses ancoradas pelo fim, dois alvos. Protocolo com não-vazamento provado por teste e por mutação. Custo: 40,2 min, dentro do orçamento de 45.
+
+### Veredito, em três camadas
+
+| Recorte | Quantidade | Valor |
+|---|---|---|
+| MASE mediano (todas as séries) | **0,979** | 1,000 |
+| Vitórias do SARIMA | 52,8% | 48,1% |
+| MASE mediano no top-10% das séries por volume de erro | **0,967** | **0,879** |
+| Vitórias no top-10% | 56% | **67%** |
+| MAE agregado (SARIMA vs baseline) | 5,2 vs 5,2 | **38,8M vs 74,2M** |
+
+A leitura honesta: **na mediana o SARIMA empata com o baseline; nas séries grandes, vence com folga.** Para o alvo de valor, o erro absoluto agregado do SARIMA é quase metade do baseline - mas a mediana é empate, porque a maioria das 1.459 séries é pequena e quase constante, onde não há o que um modelo aprenda sobre a repetição ingênua.
+
+O MASE **médio** de valor é 153,7 e não deve ser usado: é razão entre erros, e explode quando o baseline acerta quase exato numa série minúscula. A mediana e a contagem de vitórias são as medidas estáveis - e o relatório traz as duas justamente porque a média esconde a cauda.
+
+### A medição preliminar não se confirmou - e o porquê importa
+
+O teste rápido feito ao escrever o plano (15 séries de maior volume, uma única janela) apontava o SARIMA perdendo por 19%. No protocolo completo, o top-10% das séries dá MASE 0,879-0,967 a favor do SARIMA. A diferença é o protocolo: uma janela única termina exatamente na queda de regime de 2024, e nove janelas distribuem a avaliação pela história. **Conclusão metodológica: avaliação de série temporal com janela única é ruído com cara de resultado.**
+
+### As três hipóteses, respondidas
+
+**1. Quebra estrutural de 2021 não derruba o SARIMA relativo ao baseline.** O MASE mediano por janela (quantidade) até melhora nas janelas recentes: 1,000 nas duas primeiras (2015-16, treino curto), 0,94-0,98 de 2017 em diante, com vitórias subindo de 39% para 54-58%. A queda de regime atinge os dois modelos por igual - a medida relativa fica estável.
+
+**2. As competências parciais não contaminam a comparação.** A última janela, que contém 202404 truncada, tem MASE mediano 0,949 contra 0,982 das demais (quantidade) - ligeiramente melhor, não pior. O corte da fonte prejudica os dois modelos na mesma proporção.
+
+**3. Quantidade é mais previsível que valor na mediana; valor é onde o SARIMA mais agrega nas séries grandes.** Coerente com a natureza do dado: o valor mensal é dominado por poucos contratos grandes, e é aí que a estrutura temporal ajuda mais que a repetição do ano anterior.
+
+### Limitações declaradas
+
+- **21,9% das avaliações têm MASE indefinido**: o baseline foi perfeito na janela, quase sempre em séries constantes ou zeradas. Ficam fora da comparação - incluí-las como vitória de qualquer lado seria inventar resultado.
+- As 55 séries com menos de 36 meses de calendário ficaram fora (0,4% do volume).
+- O experimento avalia previsão um-ano-à-frente com re-treino anual; horizontes menores com re-treino mensal não foram medidos.
+
 ## Em aberto - erro de digitação da fonte é anomalia?
 
 **Decidir no Plano 05, antes de treinar o detector.**
