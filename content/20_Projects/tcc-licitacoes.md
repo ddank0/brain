@@ -31,6 +31,7 @@ O sistema é **analítico e preditivo**. Não substitui auditoria nem caracteriz
 | [[Licitações - Plano 01 - Fundação]] | Semanas 1-2, **concluído** |
 | [[Licitações - Plano 02 - ETL]] | Semanas 3-5, **concluído** |
 | [[Licitações - Plano 03 - API]] | Semana 6, **concluído** |
+| [[Licitações - Plano 04 - Previsão]] | Semanas 7-9, **em andamento** |
 
 ---
 
@@ -62,7 +63,7 @@ O sistema é **analítico e preditivo**. Não substitui auditoria nem caracteriz
 | 1-2 | Docker Compose, PostgreSQL, Alembic, esqueleto das três stacks | RNF01, RNF04, RNF05 | **concluído** |
 | 3-5 | ETL em Python: download, parse, `COPY`, medalhão; carga de 201301-202404 | RF01, RF02, RF03, RF10 | **concluído** - 91M linhas em 24,6 min |
 | 6 | API em Laravel: consulta e análise histórica; exportação do OpenAPI | RF04, RF05, RF08, RNF03 | **concluído** - 10 endpoints, p95 medido |
-| 7-9 | SARIMA, backtesting, baseline, seleção de parâmetros | RF06 | próximo |
+| 7-9 | SARIMA, backtesting, baseline, seleção de parâmetros | RF06 | plano escrito |
 | 10-12 | Features, Isolation Forest, LOF, avaliação em três frentes | RF07 | - |
 | 13-15 | Dashboard Angular, cinco telas | RF09 | - |
 | 16 | Testes finais, README, redação | RNF02 | - |
@@ -106,7 +107,7 @@ O cliente HTTP é **gerado** do OpenAPI, não escrito à mão.
 | Três toolchains atrasam a fase inicial | Média | Médio | Semanas 1-2 dedicadas a infra; fluência em duas das três |
 | Esquema duplicado (SQLAlchemy/Eloquent) diverge | Média | Médio | Alembic como proprietário único; testes de contrato |
 | Carga excede o orçamento | Baixa | Baixo | Ocorreu e foi resolvido: 62 min viraram 24,6 ao mover a remoção das FKs para o escopo do lote. O alvo de 45 min é cumprido com 91M linhas, 3,1x a estimativa. Ver [[Licitações - Arquitetura do Sistema]] |
-| SARIMA não supera o baseline | Média | Médio | Resultado negativo é resultado válido; a comparação é a contribuição |
+| SARIMA não supera o baseline | **Alta** | Médio | Medição preliminar em 15 séries: vence em cerca de metade, mas perde no MAE médio. Resultado negativo é resultado válido; a comparação é a contribuição. Ver [[Licitações - Plano 04 - Previsão]] |
 | Anomalias sem validação convincente | Média | Alto | Três frentes de avaliação; limitação declarada |
 | Estouro de prazo | Média | Alto | Ordem de corte pré-definida |
 
