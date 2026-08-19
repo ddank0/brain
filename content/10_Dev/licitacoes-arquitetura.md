@@ -240,20 +240,46 @@ Cada camada tem Dockerfile próprio. A imagem dos jobs carrega Polars, scikit-le
 
 Todos os endpoints leem tabelas. Nenhum executa modelo.
 
-| Método | Rota | Descrição | RF |
-|---|---|---|---|
-| GET | `/licitacoes` | Consulta paginada: órgão, modalidade, UF, período, situação, faixa de valor | RF04 |
-| GET | `/licitacoes/{id}` | Detalhe com itens e participantes | RF04 |
-| GET | `/analytics/evolucao-temporal` | Série de quantidade e valor por competência | RF05 |
-| GET | `/analytics/ranking-orgaos` | Órgãos por volume financeiro | RF05 |
-| GET | `/analytics/ranking-fornecedores` | Fornecedores por valor vencido | RF05 |
-| GET | `/analytics/distribuicao-modalidades` | Participação por modalidade | RF05 |
-| GET | `/forecast` | Previsões com intervalo de confiança | RF06 |
-| GET | `/anomalies` | Registros ranqueados por score | RF07 |
-| GET | `/anomalies/{id}` | Score com contribuição dos atributos | RF07 |
-| GET | `/health` | Estado do serviço e da última ingestão | RF10 |
+| Método | Rota | Descrição | RF | Estado |
+|---|---|---|---|---|
+| GET | `/licitacoes` | Consulta paginada: órgão, modalidade, UF, período, situação, faixa de valor, busca no objeto | RF04 | no ar |
+| GET | `/licitacoes/{id}` | Detalhe com itens e participantes | RF04 | no ar |
+| GET | `/analytics/evolucao` | Série de quantidade e valor por competência | RF05 | no ar |
+| GET | `/analytics/modalidades` | Participação por modalidade | RF05 | no ar |
+| GET | `/analytics/orgaos` | Órgãos por volume financeiro | RF05 | no ar |
+| GET | `/analytics/fornecedores` | Fornecedores por valor vencido | RF05 | no ar |
+| GET | `/health` | Estado do serviço e da última ingestão | RF10 | no ar |
+| GET | `/openapi.json` | Especificação versionada | RNF03 | no ar |
+| GET | `/docs` | Especificação renderizada | RNF03 | no ar |
+| GET | `/forecast` | Previsões com intervalo de confiança | RF06 | Plano 04 |
+| GET | `/anomalies` | Registros ranqueados por score | RF07 | Plano 05 |
+| GET | `/anomalies/{id}` | Score com contribuição dos atributos | RF07 | Plano 05 |
 
 CORS habilitado para a origem do frontend.
+
+### Onde está o contrato
+
+O contrato formal - caminhos, parâmetros, tipos de cada campo e formato de erro - é o **`openapi.json` na raiz do `tcc-api`**, servido em `/api/openapi.json` e renderizado em `/api/docs`.
+
+Ele não é reproduzido aqui de propósito. Duplicar os tipos numa nota criaria duas fontes que divergem no primeiro endpoint alterado, e é justamente a divergência que a especificação existe para impedir: o cliente TypeScript do Angular é gerado dela, e um teste (`openapi:export --check`) falha se o arquivo versionado sair de sincronia com o código.
+
+Sete caminhos e sete schemas hoje: `Licitacao`, `Modalidade`, `Orgao`, `UnidadeGestora`, `PaginacaoMeta`, `PontoDaSerie` e `RankingFornecedor`.
+
+### Decisões de contrato que o schema não explica
+
+O schema diz *qual* é o tipo; estas são as razões, que não cabem nele:
+
+| Campo | Tipo | Por quê |
+|---|---|---|
+| `valor`, `valor_total`, `valor_item` | `string` | Decimal, não ponto flutuante. Valores chegam a 9,6 x 10^20 no dado real, e float perderia precisão silenciosamente. O cliente precisa tratar como string ou decimal, nunca como number |
+| `data_abertura` | `string \| null` | Nula em **72,6%** dos registros. Exposta como está: preencher esconderia a lacuna. É por isso que o recorte de período usa `competencia` |
+| `competencia` | `string` `AAAAMM` | Chave temporal completa e confiável, ao contrário das datas |
+| `cnpj` | `string` | Há CNPJ com e sem zero à esquerda para a mesma empresa, e CPF de 11 dígitos no lugar de CNPJ. Tratar como número destruiria os dois casos |
+| `parcial` | `boolean` | Marca competência publicada incompleta pela fonte. O motivo vem em `meta.competencias_parciais` |
+| `flag_vencedor` | `boolean` | Vem como `SIM`/`NÃO` na origem. É a fonte de verdade para competitividade, e não `item.cnpj_vencedor` |
+| `granularidade` | `string` | Diz de qual tabela o ranking saiu - `global` ou `por_competencia` -, para que o consumidor saiba a procedência do número |
+
+**Erros** seguem o padrão do Laravel: `422` com `message` e `errors` por campo, `404` com `message`. A validação rejeita competência malformada, UF inexistente, `per_page` acima de 100 e coluna de ordenação fora da lista branca.
 
 ---
 
