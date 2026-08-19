@@ -251,7 +251,7 @@ Todos os endpoints leem tabelas. Nenhum executa modelo.
 | GET | `/health` | Estado do serviço e da última ingestão | RF10 | no ar |
 | GET | `/openapi.json` | Especificação versionada | RNF03 | no ar |
 | GET | `/docs` | Especificação renderizada | RNF03 | no ar |
-| GET | `/forecast` | Previsões com intervalo de confiança | RF06 | Plano 04 |
+| GET | `/forecast` | Previsões com intervalo de confiança e procedência | RF06 | no ar |
 | GET | `/anomalies` | Registros ranqueados por score | RF07 | Plano 05 |
 | GET | `/anomalies/{id}` | Score com contribuição dos atributos | RF07 | Plano 05 |
 
