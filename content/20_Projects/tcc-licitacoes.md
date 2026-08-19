@@ -31,7 +31,7 @@ O sistema é **analítico e preditivo**. Não substitui auditoria nem caracteriz
 | [[Licitações - Plano 01 - Fundação]] | Semanas 1-2, **concluído** |
 | [[Licitações - Plano 02 - ETL]] | Semanas 3-5, **concluído** |
 | [[Licitações - Plano 03 - API]] | Semana 6, **concluído** |
-| [[Licitações - Plano 04 - Previsão]] | Semanas 7-9, **em andamento** |
+| [[Licitações - Plano 04 - Previsão]] | Semanas 7-9, **concluído** |
 
 ---
 
@@ -63,8 +63,8 @@ O sistema é **analítico e preditivo**. Não substitui auditoria nem caracteriz
 | 1-2 | Docker Compose, PostgreSQL, Alembic, esqueleto das três stacks | RNF01, RNF04, RNF05 | **concluído** |
 | 3-5 | ETL em Python: download, parse, `COPY`, medalhão; carga de 201301-202404 | RF01, RF02, RF03, RF10 | **concluído** - 91M linhas em 24,6 min |
 | 6 | API em Laravel: consulta e análise histórica; exportação do OpenAPI | RF04, RF05, RF08, RNF03 | **concluído** - 10 endpoints, p95 medido |
-| 7-9 | SARIMA, backtesting, baseline, seleção de parâmetros | RF06 | plano escrito |
-| 10-12 | Features, Isolation Forest, LOF, avaliação em três frentes | RF07 | - |
+| 7-9 | SARIMA, backtesting, baseline, seleção de parâmetros | RF06 | **concluído** - 23.730 avaliações, sem vazamento |
+| 10-12 | Features, Isolation Forest, LOF, avaliação em três frentes | RF07 | próximo |
 | 13-15 | Dashboard Angular, cinco telas | RF09 | - |
 | 16 | Testes finais, README, redação | RNF02 | - |
 | **Bônus** | Conector PNCP, se houver tempo residual | - | - |

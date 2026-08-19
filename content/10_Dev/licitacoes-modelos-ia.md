@@ -61,10 +61,14 @@ Todos são agregações, portanto vetorizáveis em Polars. Nenhum exige laço po
 | MASE mediano no top-10% das séries por volume de erro | **0,967** | **0,879** |
 | Vitórias no top-10% | 56% | **67%** |
 | MAE agregado (SARIMA vs baseline) | 5,2 vs 5,2 | **38,8M vs 74,2M** |
+| RMSE agregado | **6,5 vs 6,9** | **126,5M vs 249,3M** |
+| MAPE mediano | **67,9% vs 81,9%** | 505,6% vs **236,5%** |
 
 A leitura honesta: **na mediana o SARIMA empata com o baseline; nas séries grandes, vence com folga.** Para o alvo de valor, o erro absoluto agregado do SARIMA é quase metade do baseline - mas a mediana é empate, porque a maioria das 1.459 séries é pequena e quase constante, onde não há o que um modelo aprenda sobre a repetição ingênua.
 
 O MASE **médio** de valor é 153,7 e não deve ser usado: é razão entre erros, e explode quando o baseline acerta quase exato numa série minúscula. A mediana e a contagem de vitórias são as medidas estáveis - e o relatório traz as duas justamente porque a média esconde a cauda.
+
+O MAPE de valor conta a mesma história pelo avesso, e vale deixar explícito: **em termos percentuais o SARIMA é bem pior na mediana (505,6% contra 236,5%)**, ao mesmo tempo em que o erro absoluto cai à metade. Não é contradição - o SARIMA suaviza em direção à média da série, o que erra por muito, percentualmente, nos meses pequenos das séries pequenas, e acerta onde o dinheiro está. Qual métrica importa depende do uso: para somar orçamento, o absoluto; para acompanhar uma série pequena específica, o baseline ingênuo é páreo duro.
 
 ### A medição preliminar não se confirmou - e o porquê importa
 
