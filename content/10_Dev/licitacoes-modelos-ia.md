@@ -88,6 +88,15 @@ As previsões persistidas em `previsao` são truncadas em zero, nos três limite
 
 **O backtesting foi medido sem o truncamento**, direto da saída do modelo. Isso é conservador para o SARIMA: truncar em zero só reduziria o erro dele (o observado nunca é negativo), então o empate na mediana é um piso, não um teto.
 
+### Acoplamento operacional: retreinar apaga as métricas do backtest
+
+`execucao_modelo` guarda estado corrente por desenho - o retreino substitui a
+rodada do mesmo agrupamento, e as métricas de backtest gravadas no
+`metricas_json` vão junto. **Depois de qualquer `tcc train`, o resumo do
+backtest precisa ser repersistido.** Descoberto na revisão do plano: a
+verificação final encontrou zero execuções com backtest, minutos depois de
+elas terem sido gravadas.
+
 ### Limitações declaradas
 
 - **21,9% das avaliações têm MASE indefinido**: o baseline foi perfeito na janela, quase sempre em séries constantes ou zeradas. Ficam fora da comparação - incluí-las como vitória de qualquer lado seria inventar resultado.
