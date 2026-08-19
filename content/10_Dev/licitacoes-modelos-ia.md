@@ -35,11 +35,11 @@ Sem esse baseline, uma métrica de erro isolada não sustenta afirmação de val
 | Atributo | Origem | Fundamento |
 |---|---|---|
 | Razão entre valor e mediana histórica do mesmo órgão e modalidade | `licitacao` | Desvio contextualizado, não absoluto |
-| **Número de participantes na licitação** | `participante_licitacao` | Participante único indica baixa competitividade |
+| **Número de participantes, relativo à mediana da modalidade** | `participante_licitacao` | **Medido: 70,3% das licitações têm participante único** - é a natureza de Dispensa e Inexigibilidade (98%), mas exceção em Pregão (6-11%). Sem o contexto da modalidade, o sinal aponta o rito, não o desvio |
 | **Taxa de vitória do fornecedor naquele órgão** | `participante_licitacao` | Captura relação recorrente entre contratante e contratado |
 | **Concentração de vencedores por órgão (HHI)** | `participante_licitacao` | Competitividade estrutural do órgão |
 | Razão entre valor unitário e mediana do mesmo código de item no período | `item_licitacao` | Comparação item a item entre órgãos |
-| Intervalo entre `data_abertura` e `data_resultado` | `licitacao` | Prazos atípicos |
+| ~~Intervalo entre `data_abertura` e `data_resultado`~~ | `licitacao` | **Removido: 72,6% das `data_abertura` são nulas** - a feature existiria para um quarto da base |
 | Desvio sazonal em relação ao padrão do órgão | `serie_mensal` | Concentração incomum, p.ex. fim de exercício |
 
 Os três em destaque só são construíveis porque `ParticipantesLicitação.csv` fornece o conjunto de concorrentes com identificação do vencedor. É o que distingue este trabalho de um detector genérico de outlier de valor, e o argumento central da escolha da fonte - ver [[Licitações - Fontes de Dados Públicos]].
