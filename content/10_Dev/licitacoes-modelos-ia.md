@@ -82,10 +82,16 @@ O teste rápido feito ao escrever o plano (15 séries de maior volume, uma únic
 
 **3. Quantidade é mais previsível que valor na mediana; valor é onde o SARIMA mais agrega nas séries grandes.** Coerente com a natureza do dado: o valor mensal é dominado por poucos contratos grandes, e é aí que a estrutura temporal ajuda mais que a repetição do ano anterior.
 
+### Pós-processamento das previsões servidas
+
+As previsões persistidas em `previsao` são truncadas em zero, nos três limites: o domínio é contagem e valor, e o ARIMA irrestrito extrapolou queda para baixo de zero em 512 das 3.492 previsões de quantidade da primeira rodada. Quando a previsão inteira é negativa, o intervalo degenera para [0, 0] - a leitura honesta de "essencialmente zero".
+
+**O backtesting foi medido sem o truncamento**, direto da saída do modelo. Isso é conservador para o SARIMA: truncar em zero só reduziria o erro dele (o observado nunca é negativo), então o empate na mediana é um piso, não um teto.
+
 ### Limitações declaradas
 
 - **21,9% das avaliações têm MASE indefinido**: o baseline foi perfeito na janela, quase sempre em séries constantes ou zeradas. Ficam fora da comparação - incluí-las como vitória de qualquer lado seria inventar resultado.
-- As 55 séries com menos de 36 meses de calendário ficaram fora (0,4% do volume).
+- As 55 séries com menos de 36 meses de calendário ficaram fora: **297 licitações, 0,017% do volume**. (Uma versão anterior desta nota dizia 0,4% - era o número de antes do preenchimento de calendário, quando o corte era por contagem de linhas.)
 - O experimento avalia previsão um-ano-à-frente com re-treino anual; horizontes menores com re-treino mensal não foram medidos.
 
 ## Em aberto - erro de digitação da fonte é anomalia?
