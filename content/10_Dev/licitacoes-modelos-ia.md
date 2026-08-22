@@ -113,9 +113,9 @@ Detector: IsolationForest (100 árvores, seed 42) sobre oito atributos contextua
 
 | Corte | Recuperadas | Recall |
 |---|---|---|
-| top-1.000 | 16 | 1,6% |
-| top-1% (17.430) | 133 | **13,3%** |
-| top-5% (87.151) | 328 | 32,8% |
+| top-1.000 | 26 | 2,6% |
+| top-1% (17.430) | 134 | **13,4%** |
+| top-5% (87.151) | 304 | 30,4% |
 
 O recall é baixo, e a causa é estrutural e medida: **a cauda natural da base é mais extrema que qualquer planta plausível** - há ~17 mil linhas reais com razão de valor acima de 310x, então perturbações de 10-100x não alcançam o top-1%. O experimento mede menos o detector e mais a natureza da base: o extremo real é dominado por registros da classe qualidade-de-dado.
 
@@ -127,14 +127,16 @@ IsolationForest vs LocalOutlierFactor, amostra estratificada de 200 mil:
 
 | Medida | Valor |
 |---|---|
-| Jaccard dos top-1% | **0,049** |
-| Spearman dos scores | 0,242 |
+| Jaccard dos top-1% | **0,048** |
+| Spearman dos scores | 0,248 |
 
 Concordância baixa, com causa conhecida e declarada: **70% das linhas têm features idênticas** (dispensas de participante único com razões neutras), e métodos de densidade como o LOF degeneram com empates massivos - o próprio scikit-learn emite o aviso. A concordância baixa aqui não arbitra qual método está certo; diz que o dado tem uma estrutura (duplicação massiva do caso típico) com a qual o LOF não lida.
 
 ### Frente 3 - qualitativa do top-20, e o artefato que ela encontrou
 
 A primeira rodada tinha as 20 posições do topo ocupadas por licitações sigilosas da Polícia Federal, com HHI 0,976. A inspeção revelou artefato: o CNPJ sentinela `-11` ("Sigiloso") era contado como vencedor recorrente, e a concentração era de representação, não de comportamento. **As features de identidade (taxa de vitória, HHI) passaram a excluir sentinelas** - como o ranking de fornecedores já fazia - e o recall sintético dobrou como efeito colateral.
+
+**Nota de reprodutibilidade:** a revisão do plano encontrou que dois `tcc score` seguidos davam rankings diferentes com a mesma seed - o `group_by` do Polars não garante ordem de linhas, e o IsolationForest sorteia subamostras por índice. A matriz passou a sair ordenada pela chave natural, o determinismo fim a fim foi provado comparando o recomputado com o persistido (top-100 idêntico em id e score), e os números desta seção são os da versão determinística.
 
 Após a correção, o top-20 é 100% da classe `contem_item_implausivel`, dominado por `razao_valor_grupo` entre 1.100x e 67.000x: **a cabeça do ranking é qualidade de dado**, não padrão de contratação. Isso é informação, não fracasso - a flag booleana exposta pela API permite à tela segmentar as duas classes, e a contribuição por atributo diz em cada caso o porquê da posição.
 
