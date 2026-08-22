@@ -60,7 +60,7 @@ Alembic é o **único** sistema de migrations do projeto. As migrations do Larav
 
 ### OpenAPI como artefato de primeira classe
 
-A especificação é exportada para o repositório a cada alteração de contrato, não tratada como subproduto. O cliente TypeScript do Angular é **gerado** dela (`openapi-generator`), eliminando duplicação entre front e API e mantendo os dois sincronizados por construção.
+A especificação é exportada para o repositório a cada alteração de contrato, não tratada como subproduto. O cliente TypeScript do Angular é **gerado** dela (`ng-openapi-gen` - Node puro; o `openapi-generator` clássico exige JVM, que o container não tem), eliminando duplicação entre front e API e mantendo os dois sincronizados por construção.
 
 ### Escolha da ferramenta de OpenAPI
 
@@ -332,6 +332,8 @@ O ponto de virada está em torno de três anos. Três saídas foram medidas e de
 - **Cobrir a série inteira pela tabela global**: implementado, e resolve o caso extremo (1.054 ms para 33 ms), mas não os intermediários.
 
 O custo é inerente: agregar centenas de milhares de linhas por CNPJ leva o tempo que leva. O alvo continua declarado como 500 ms, e **o desvio fica registrado em vez de o alvo ser afrouxado** - o p50 está dentro, e o estouro atinge recortes acima de três anos, que a tela de análise não usa por padrão. Se virar necessidade real, a saída é materializar por faixa e não otimizar a consulta.
+
+A revisão do Plano 06 mediu também o **endpoint completo** (não só o SQL): o pior caso de 10 anos fica entre 4 e 9 s, contra 0,3 s de um recorte de 6 meses - a serialização dos agregados soma sobre a consulta. É esse o número que a tela de análise precisa respeitar ao limitar o intervalo do filtro.
 
 Uma nota de método: a primeira medição deu p95 de 3.045 ms porque o script sorteava as duas pontas do intervalo de forma uniforme - o que parece neutro e não é. Aquela distribuição gera mediana de 26 meses e 39% dos casos acima de três anos, algo que nenhuma tela faz. O sorteio passou a ser ponderado por larguras plausíveis, e isso está no script.
 
