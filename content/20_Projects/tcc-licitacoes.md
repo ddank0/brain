@@ -33,6 +33,7 @@ O sistema é **analítico e preditivo**. Não substitui auditoria nem caracteriz
 | [[Licitações - Plano 03 - API]] | Semana 6, **concluído** |
 | [[Licitações - Plano 04 - Previsão]] | Semanas 7-9, **concluído** |
 | [[Licitações - Plano 05 - Anomalias]] | Semanas 10-12, **concluído** |
+| [[Licitações - Plano 06 - Dashboard]] | Semanas 13-15, **em andamento** |
 
 ---
 
@@ -66,7 +67,7 @@ O sistema é **analítico e preditivo**. Não substitui auditoria nem caracteriz
 | 6 | API em Laravel: consulta e análise histórica; exportação do OpenAPI | RF04, RF05, RF08, RNF03 | **concluído** - 10 endpoints, p95 medido |
 | 7-9 | SARIMA, backtesting, baseline, seleção de parâmetros | RF06 | **concluído** - 23.730 avaliações, sem vazamento |
 | 10-12 | Features, Isolation Forest, LOF, avaliação em três frentes | RF07 | **concluído** - 1,74M pontuadas, três frentes registradas |
-| 13-15 | Dashboard Angular, cinco telas | RF09 | próximo |
+| 13-15 | Dashboard Angular, cinco telas | RF09 | plano escrito |
 | 16 | Testes finais, README, redação | RNF02 | - |
 | **Bônus** | Conector PNCP, se houver tempo residual | - | - |
 
